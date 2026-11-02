@@ -1,2 +1,11 @@
 /Library
 /Temp
+/Logs
+/Logs
+/Logs
+/Logs
+*.log
+Logs/shadercompiler-AssetImportWorker2-0.log
+Logs/shadercompiler-AssetImportWorker1-0.log
+Logs/AssetImportWorker2.log
+Logs/AssetImportWorker1.log
