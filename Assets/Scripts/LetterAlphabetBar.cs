@@ -28,6 +28,13 @@ public class LetterAlphabetBar : MonoBehaviour
     [Tooltip("字母行高度（像素），植物从字母上方开始长")]
     public float letterRowHeight = 48f;
 
+    [Header("字母显示（不影响选择与生长规则）")]
+    [Tooltip("英文字母专用字体；留空使用工程自带的 LiberationSans SDF，不使用全局乱码雨字体")]
+    [SerializeField] private TMP_FontAsset displayFont;
+    [SerializeField, Min(0f)] private float minimumLetterScreenSize = 18f;
+    [SerializeField, Min(0f)] private float minimumFruitScreenSize = 24f;
+    [SerializeField, Min(0f)] private float letterBottomInset = 24f;
+
     [Header("容忍区间（与 BottomLine 高光共用同一高斯宽度）")]
     [Tooltip("焦点字母两侧多少像素内的字母也会生长（高斯衰减，2.5σ≈该距离）")]
     public float tolerancePx = 120f;
@@ -72,6 +79,16 @@ public class LetterAlphabetBar : MonoBehaviour
     private LetterPlant[] _plants;
     private Canvas _canvas;
     private TMP_FontAsset _font;
+    private Material _labelMaterial;
+    private RectTransform _divider;
+    private TextMeshProUGUI[] _letterLabels;
+    private readonly Vector3[] _dividerCorners = new Vector3[4];
+    private readonly Vector3[] _canvasCorners = new Vector3[4];
+    private float _displayLetterSize, _displayFruitSize, _displayRowHeight;
+    private float _displayFruitBase, _displayFruitSpacing;
+
+    // Glyph rain must land at the actual displayed row, including its safe inset.
+    public float LetterRowDisplayHeight => _displayRowHeight > 0f ? _displayRowHeight : letterRowHeight;
 
     private class FruitEntry { public RectTransform rect; public float targetY; }
     private readonly List<FruitEntry> _fruits = new List<FruitEntry>();
@@ -81,6 +98,8 @@ public class LetterAlphabetBar : MonoBehaviour
         ApplyNumHands(); // 必须赶在 Runner 消费配置前：Bootstrap 初始化要数帧，Awake 一定更早
         _rect = GetComponent<RectTransform>();
         _canvas = GetComponentInParent<Canvas>();
+        if (transform.parent != null)
+            _divider = transform.parent.Find("Image") as RectTransform;
         LoadFont();
         Build();
     }
@@ -108,10 +127,18 @@ public class LetterAlphabetBar : MonoBehaviour
 
     private void LoadFont()
     {
-        _font = TMP_Settings.defaultFontAsset;
-        if (_font == null) _font = Resources.Load<TMP_FontAsset>("Fonts/LiberationSans SDF");
+        _font = displayFont;
+        if (_font == null) _font = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+        if (_font == null) _font = TMP_Settings.defaultFontAsset;
         if (_font == null)
             Debug.LogWarning("[AlphabetBar] 找不到 TMP 字体资产，字母可能不显示。请 Window > TextMeshPro > Import TMP Essential Resources");
+        else
+        {
+            _labelMaterial = new Material(_font.material) { name = "Alphabet readable labels", hideFlags = HideFlags.DontSave };
+            _labelMaterial.EnableKeyword("OUTLINE_ON");
+            _labelMaterial.SetColor("_OutlineColor", new Color(0.04f, 0.05f, 0.05f, 1f));
+            _labelMaterial.SetFloat("_OutlineWidth", 0.1f);
+        }
     }
 
     private void Build()
@@ -127,6 +154,7 @@ public class LetterAlphabetBar : MonoBehaviour
 
         int n = letters.Length;
         _plants = new LetterPlant[n];
+        _letterLabels = new TextMeshProUGUI[n];
         _rainHeat = new float[n];
 
         for (int i = 0; i < n; i++)
@@ -147,6 +175,7 @@ public class LetterAlphabetBar : MonoBehaviour
             // 字母 TMP：贴格子底部
             var letter = CreateLabel(slotGo.transform, "Letter", letterFontSize, letterColor);
             letter.text = letters[i].ToString();
+            _letterLabels[i] = letter;
             var letterRect = (RectTransform)letter.transform;
             letterRect.anchorMin = new Vector2(0f, 0f);
             letterRect.anchorMax = new Vector2(1f, 0f);
@@ -172,6 +201,69 @@ public class LetterAlphabetBar : MonoBehaviour
             plant.onFinished += _ => SpawnFruit(idx);
             _plants[i] = plant;
         }
+        RefreshDisplayLayout(true);
+    }
+
+    private void RefreshDisplayLayout(bool force = false)
+    {
+        float scale = Mathf.Max(0.01f, _canvas != null ? _canvas.scaleFactor : 1f);
+        float dividerTop = _rect.rect.yMax;
+        if (_divider != null)
+        {
+            _divider.GetWorldCorners(_dividerCorners);
+            var parent = _rect.parent as RectTransform;
+            if (parent != null && Mathf.Approximately(_rect.anchorMin.y, 0f) && Mathf.Approximately(_rect.anchorMax.y, 0f))
+            {
+                float bottom = parent.rect.yMin + _rect.anchoredPosition.y - _rect.pivot.y * _rect.rect.height;
+                float targetHeight = parent.InverseTransformPoint(_dividerCorners[0]).y - bottom;
+                if (targetHeight > letterRowHeight && Mathf.Abs(targetHeight - _rect.rect.height) > 0.01f)
+                {
+                    _rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, targetHeight);
+                    Vector2 position = _rect.anchoredPosition;
+                    position.y = bottom - parent.rect.yMin + _rect.pivot.y * targetHeight;
+                    _rect.anchoredPosition = position;
+                    force = true;
+                }
+            }
+            dividerTop = _rect.InverseTransformPoint(_dividerCorners[1]).y;
+        }
+
+        float letterSize = Mathf.Max(letterFontSize, minimumLetterScreenSize / scale);
+        float rowHeight = Mathf.Max(letterRowHeight, letterBottomInset + letterSize * 1.4f + 4f);
+        float fruitBase = Mathf.Max(0f, dividerTop - _rect.rect.yMax) + Mathf.Max(0f, fruitBaseOffset);
+        float fruitSize = Mathf.Max(fruitFontSize, minimumFruitScreenSize / scale);
+        if (_canvas != null)
+        {
+            ((RectTransform)_canvas.transform).GetWorldCorners(_canvasCorners);
+            float available = _rect.InverseTransformPoint(_canvasCorners[1]).y - _rect.rect.yMax - fruitBase - 12f;
+            // Keep the newest five letters legible inside the upper area.
+            float fitSize = (available - 4f * 8f) / (5f * 1.4f);
+            if (fitSize > 0f) fruitSize = Mathf.Min(fruitSize, Mathf.Max(12f / scale, fitSize));
+        }
+        float fruitStep = Mathf.Max(fruitSpacing, fruitSize * 1.4f + 8f);
+        bool changed = force || !Mathf.Approximately(_displayLetterSize, letterSize) ||
+            !Mathf.Approximately(_displayFruitSize, fruitSize) || !Mathf.Approximately(_displayRowHeight, rowHeight) ||
+            !Mathf.Approximately(_displayFruitBase, fruitBase) || !Mathf.Approximately(_displayFruitSpacing, fruitStep);
+        _displayLetterSize = letterSize; _displayFruitSize = fruitSize; _displayRowHeight = rowHeight;
+        _displayFruitBase = fruitBase; _displayFruitSpacing = fruitStep;
+        if (!changed) return;
+
+        for (int i = 0; i < _letterLabels.Length; i++)
+        {
+            var label = _letterLabels[i];
+            label.fontSize = letterSize;
+            label.rectTransform.offsetMin = new Vector2(4f, letterBottomInset);
+            label.rectTransform.offsetMax = new Vector2(-4f, rowHeight);
+            var plantRect = (RectTransform)_plants[i].transform;
+            plantRect.offsetMin = new Vector2(0f, rowHeight);
+        }
+        foreach (var fruit in _fruits)
+        {
+            if (fruit.rect == null) continue;
+            fruit.rect.GetComponent<TextMeshProUGUI>().fontSize = fruitSize;
+            fruit.rect.sizeDelta = new Vector2(fruitSize * 2f, fruitSize * 1.4f);
+        }
+        RepackFruits();
     }
 
     private TextMeshProUGUI CreateLabel(Transform parent, string name, int fontSize, Color color)
@@ -181,7 +273,12 @@ public class LetterAlphabetBar : MonoBehaviour
         go.layer = gameObject.layer;
         var tmp = go.GetComponent<TextMeshProUGUI>();
         tmp.font = _font;
+        if (_labelMaterial != null) tmp.fontSharedMaterial = _labelMaterial;
         tmp.fontSize = fontSize;
+        tmp.enableAutoSizing = false;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
+        tmp.extraPadding = true;
+        tmp.margin = Vector4.zero;
         tmp.color = color;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.raycastTarget = false;
@@ -194,12 +291,13 @@ public class LetterAlphabetBar : MonoBehaviour
         float fx = (letterIndex + 0.5f) / _plants.Length;
         var tmp = CreateLabel(transform, $"Fruit_{letters[letterIndex]}", fruitFontSize, fruitColor);
         tmp.text = letters[letterIndex].ToString();
+        tmp.fontSize = _displayFruitSize;
 
         var fr = (RectTransform)tmp.transform;
         fr.anchorMin = fr.anchorMax = new Vector2(fx, 1f); // 锚在条顶边（分割线）
         fr.pivot = new Vector2(0.5f, 0f);
-        fr.sizeDelta = new Vector2(fruitFontSize * 2f, fruitFontSize * 1.4f);
-        fr.anchoredPosition = new Vector2(0f, fruitBaseOffset);
+        fr.sizeDelta = new Vector2(_displayFruitSize * 2f, _displayFruitSize * 1.4f);
+        fr.anchoredPosition = new Vector2(0f, _displayFruitBase);
 
         _fruits.Add(new FruitEntry { rect = fr, targetY = fruitBaseOffset });
         RepackFruits(); // 旧果实整体上推一格
@@ -232,19 +330,20 @@ public class LetterAlphabetBar : MonoBehaviour
         var r = _rect.rect;
         Vector2 ap = f.rect.anchoredPosition;
         // pivot 在果实底边，判定点取果实文字中心（往上约 0.7 个字高）
-        return new Vector2(r.xMin + f.rect.anchorMin.x * r.width + ap.x, r.yMax + ap.y + fruitFontSize * 0.7f);
+        return new Vector2(r.xMin + f.rect.anchorMin.x * r.width + ap.x, r.yMax + ap.y + _displayFruitSize * 0.7f);
     }
 
     /// <summary>按创建顺序重排 targetY：最新果实贴分割线，越老越高</summary>
     private void RepackFruits()
     {
         for (int i = 0; i < _fruits.Count; i++)
-            _fruits[i].targetY = fruitBaseOffset + (_fruits.Count - 1 - i) * fruitSpacing;
+            _fruits[i].targetY = _displayFruitBase + (_fruits.Count - 1 - i) * _displayFruitSpacing;
     }
 
     private void LateUpdate()
     {
         if (_plants == null) return;
+        RefreshDisplayLayout();
 
         // —— 果实上推动画 ——
         float k = 1f - Mathf.Exp(-fruitRiseSpeed * Time.deltaTime);
@@ -263,6 +362,11 @@ public class LetterAlphabetBar : MonoBehaviour
 
         if (rainMode) TickRainMode();
         else TickRayMode();
+    }
+
+    private void OnDestroy()
+    {
+        if (_labelMaterial != null) Destroy(_labelMaterial);
     }
 
     /// <summary>模式一：食指射线指点（原逻辑）</summary>

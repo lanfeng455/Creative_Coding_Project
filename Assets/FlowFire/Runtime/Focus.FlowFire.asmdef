@@ -1,0 +1,6 @@
+{
+    "name": "Focus.FlowFire",
+    "rootNamespace": "Focus.FlowFire",
+    "references": ["UnityEngine.UI"],
+    "autoReferenced": true
+}

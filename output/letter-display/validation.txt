@@ -1,0 +1,5 @@
+PASS: complete A-Z uses the correct English atlas.
+PASS: plant top and divider bottom align within 0.5 screen pixels.
+PASS: all five generated letters are above the divider, clear of each other, and use the English font.
+PASS: original eraser works with the displayed font size; WATER still triggers.
+PASS: unchanged water/fire flow completes; observed hold=1.997089

@@ -1,0 +1,3 @@
+After full sweep: latched=True, fire active=False
+After water fade: latched=True, fire active=False
+Next water loop: latched=True, fire active=False

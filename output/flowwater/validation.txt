@@ -1,0 +1,4 @@
+Water interior moving pixels: 7168 / 18710
+Both shaders supported; zero shader messages.
+Main-scene water lower anchor approximately 0.57; UI raycasts disabled.
+No WATER recognition or fire-state modification.

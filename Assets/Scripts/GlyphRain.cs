@@ -233,7 +233,7 @@ public class GlyphRain : MonoBehaviour
 
         // —— 下落 + 遮挡 + 落地 ——
         var r = _rect.rect;
-        float floorY = r.yMin + bar.letterRowHeight;  // 字母行顶
+        float floorY = r.yMin + bar.LetterRowDisplayHeight;  // 实际显示的字母行顶
         float dt = Time.deltaTime;
 
         foreach (var d in _pool)

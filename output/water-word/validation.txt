@@ -1,0 +1,7 @@
+PASS: water stays hidden without WATER. Game time=52.26769
+PASS: RETAW grown through LetterPlant.SetFocus does not trigger.
+PASS: WAXTER does not trigger.
+PASS: erasing X with EraseFruitAt corrects WATER and starts a sweep.
+PASS: full coverage extinguishes fire.
+PASS: both effects clear after 2s. Observed hold=1.998016
+PASS: existing WATER cannot retrigger a completed encounter.
