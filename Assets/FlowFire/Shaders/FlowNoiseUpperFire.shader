@@ -9,6 +9,11 @@ Shader "Focus/FlowFire/UpperScreen"
         _Opacity ("Opacity", Range(0,1)) = 0.96
         _AspectRatio ("Region Aspect", Float) = 3.5
         _FrontSoftness ("Reveal Edge Softness", Range(0.005,0.15)) = 0.04
+        _SplitStart ("Split Line Start (Local)", Vector) = (0,0,0,0)
+        _SplitEnd ("Split Line End (Local)", Vector) = (0,0,0,0)
+        _SplitFeather ("Split Line Feather (px)", Float) = 6
+        _SplitSpan ("Split Reveal Span (px)", Float) = 1000
+        _SplitEnabled ("Split Line Enabled", Float) = 0
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
         _StencilOp ("Stencil Operation", Float) = 0
@@ -50,6 +55,8 @@ Shader "Focus/FlowFire/UpperScreen"
             float4 _Color;
             float4 _ClipRect;
             float _FlowTime, _Reveal, _Opacity, _AspectRatio, _FrontSoftness;
+            float4 _SplitStart, _SplitEnd;
+            float _SplitFeather, _SplitSpan, _SplitEnabled;
 
             struct Attributes
             {
@@ -173,20 +180,56 @@ Shader "Focus/FlowFire/UpperScreen"
             {
                 if (_Reveal <= 0.0) return 0.0;
                 float2 uv = float2(input.uv.x * _AspectRatio, 1.0 - input.uv.y);
+                // Rotate the turbulence flow so it streams from the upper right
+                // toward the lower left, matching the 45-degree beam clash.
+                float2 flowDir = float2(-0.7071068, 0.7071068);
+                float2 crossDir = float2(0.7071068, 0.7071068);
+                float2 flowUv = float2(dot(uv, crossDir), dot(uv, flowDir));
                 float t = _FlowTime * 0.8;
-                float3 domain = float3(uv * 1.15 + float2(0.0, t), t * 0.5);
-                float4 d = FlowNoise(domain, uv, _FlowTime);
+                float3 domain = float3(flowUv * 1.15 - float2(0.0, t), t * 0.5);
+                float4 d = FlowNoise(domain, flowUv, _FlowTime);
                 float density = length(d.xyz) * 0.15 + 0.2 - d.w * 0.2;
                 float3 rgb = FlameColour(density);
 
-                float front = lerp(-0.09, 1.09, _Reveal);
-                front += 0.023 * sin(uv.x * 9.0 + _FlowTime * 1.3)
-                    + 0.015 * sin(uv.x * 17.0 - _FlowTime * 0.9);
-                float revealed = 1.0 - smoothstep(front - _FrontSoftness,
-                    front + _FrontSoftness, uv.y);
+                float revealed = 0.0;
+                float clipMask = 1.0;
+                if (_SplitEnabled > 0.5 && _SplitSpan > 0.0001)
+                {
+                    // Local UI space: 1 unit = 1 reference pixel on both axes,
+                    // so the wavefront stays physically parallel to the 45-degree line.
+                    float2 start = _SplitStart.xy;
+                    float2 split = _SplitEnd.xy - start;
+                    float2 dir = split / max(0.0001, length(split));
+                    float2 normal = float2(-dir.y, dir.x); // toward the upper-right flame side
+                    float2 p = input.localPosition - start;
+
+                    // Normalize wave to [0..1] across the flame image, then drive the
+                    // front from *outside* the image (1.2) all the way past the split
+                    // line (-0.05). This matches the old top-down behaviour where the
+                    // first visible flame was well off-screen.
+                    float wave = dot(p, normal) / _SplitSpan;
+                    float along = dot(p, dir) / _SplitSpan;
+                    wave += 0.02 * sin(along * 5.0 + _FlowTime * 1.3)
+                          + 0.01 * sin(along * 11.0 - _FlowTime * 0.9);
+                    float revealFront = lerp(1.2, -0.05, _Reveal);
+                    revealed = smoothstep(revealFront - _FrontSoftness,
+                        revealFront + _FrontSoftness, wave);
+
+                    // Hard clip: keep only the flame side of the split line.
+                    clipMask = smoothstep(-_SplitFeather, _SplitFeather, dot(p, normal));
+                }
+                else
+                {
+                    float front = lerp(-0.09, 1.09, _Reveal);
+                    front += 0.023 * sin(uv.x * 9.0 + _FlowTime * 1.3)
+                        + 0.015 * sin(uv.x * 17.0 - _FlowTime * 0.9);
+                    revealed = 1.0 - smoothstep(front - _FrontSoftness,
+                        front + _FrontSoftness, uv.y);
+                }
+
                 float brightness = max(rgb.r, max(rgb.g, rgb.b));
                 float coverage = smoothstep(0.015, 0.12, brightness);
-                float alpha = coverage * revealed * _Opacity * input.color.a;
+                float alpha = coverage * revealed * clipMask * _Opacity * input.color.a;
                 #ifdef UNITY_UI_CLIP_RECT
                 alpha *= UnityGet2DClipping(input.localPosition, _ClipRect);
                 #endif

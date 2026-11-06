@@ -120,8 +120,15 @@ public class GlyphRain : MonoBehaviour
         _canvas = GetComponentInParent<Canvas>();
         _rng = new System.Random();
 
-        _font = TMP_Settings.defaultFontAsset;
+        // 优先从挂载的 LetterAlphabetBar 同步字体（它已经解析了 displayFont），
+        // 这样换字体时不用同时改两处。再 fallback 到 TMP 默认 + Resources。
+        var alphabetBar = bar != null ? bar : GetComponent<LetterAlphabetBar>();
+        if (alphabetBar != null) _font = alphabetBar.DisplayFont;
+        if (_font == null) _font = TMP_Settings.defaultFontAsset;
+        if (_font == null) _font = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
         if (_font == null) _font = Resources.Load<TMP_FontAsset>("Fonts/LiberationSans SDF");
+        if (_font == null)
+            Debug.LogWarning("[GlyphRain] 找不到 TMP 字体资产，雨滴可能不显示。请在 LetterAlphabetBar.displayFont 里设字体");
 
         // 清理上次 Play 残留的雨滴（含容器）
         for (int i = transform.childCount - 1; i >= 0; i--)
@@ -218,7 +225,7 @@ public class GlyphRain : MonoBehaviour
 
         UpdateRoof();
         UpdateRoofVisuals();
-        EraseFruits();
+        EraseTypedLetters();
 
         // —— 下落方向（倾角） ——
         UpdateFallDirection();
@@ -450,14 +457,14 @@ public class GlyphRain : MonoBehaviour
         _rightRoof.gameObject.SetActive(!IsRoofAboveRain(_roofRightLocal.y));
     }
 
-    /// <summary>屋檐举到雨区上方时，用指尖方块擦掉已有的果实</summary>
-    private void EraseFruits()
+    /// <summary>屋檐举到雨区上方时，用指尖方块涂抹擦掉打字机上的字母</summary>
+    private void EraseTypedLetters()
     {
         if (!eraserEnabled || bar == null || _erasePoints.Count == 0) return;
 
         foreach (var p in _erasePoints)
         {
-            if (bar.EraseFruitAt(p, eraseRadiusPx))
+            if (bar.EraseTypedAt(p, eraseRadiusPx))
                 SpawnSplash(p.x, p.y, roofSplashColor, -40f); // 擦除反馈：白花
         }
     }

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Focus.FlowWater
 {
-    // Observe the existing fruit UI without referencing or editing gameplay types.
+    // Observe the typewriter UI without referencing or editing gameplay types.
     [DefaultExecutionOrder(1000)]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(FlowWaterPreview))]
@@ -47,14 +47,15 @@ namespace Focus.FlowWater
             if(alphabetBar==null) return;
 
             letters.Clear();
-            // SpawnFruit appends direct children. RepackFruits moves their positions,
-            // but does not change sibling order. Erased fruits disappear from this scan.
+            // Typed letters are appended as direct children of the alphabet bar.
+            // Re-layout moves their positions but keeps sibling order, and erased
+            // letters disappear from this scan.
             for(int index=0;index<alphabetBar.childCount;index++)
             {
                 Transform child=alphabetBar.GetChild(index);
                 string name=child.name;
                 if(!child.gameObject.activeInHierarchy || name.Length!=7 ||
-                    !name.StartsWith("Fruit_",StringComparison.Ordinal)) continue;
+                    !name.StartsWith("Typed_",StringComparison.Ordinal)) continue;
                 char letter=char.ToUpperInvariant(name[6]);
                 if(letter>='A' && letter<='Z') letters.Append(letter);
             }

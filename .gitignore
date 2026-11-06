@@ -9,3 +9,11 @@ Logs/shadercompiler-AssetImportWorker2-0.log
 Logs/shadercompiler-AssetImportWorker1-0.log
 Logs/AssetImportWorker2.log
 Logs/AssetImportWorker1.log
+/Logs
+*.log
+*.log
+*.log
+/Recordings
+/obj
+/obj
+/obj/Debug

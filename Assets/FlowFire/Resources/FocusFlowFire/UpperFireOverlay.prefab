@@ -100,7 +100,7 @@ MonoBehaviour:
   fireImage: {fileID: 2148847552381044503}
   sourceMaterial: {fileID: 2100000, guid: edb2c21d4b6a7415ca89fa356e372d86, type: 2}
   startDelay: 0.6
-  revealDuration: 80
+  revealDuration: 120
   opacity: 0.96
   flowSpeed: 1
   fallbackBoundary: 0.55

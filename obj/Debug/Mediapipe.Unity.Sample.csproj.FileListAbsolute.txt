@@ -445,3 +445,6 @@ C:\Unity Projects\Creative_Coding_Project\obj\Debug\Mediapipe.Unity.Sample.cspro
 C:\Unity Projects\Creative_Coding_Project\obj\Debug\Mediapip.EBDB17F6.Up2Date
 C:\Unity Projects\Creative_Coding_Project\obj\Debug\Mediapipe.Unity.Sample.dll
 C:\Unity Projects\Creative_Coding_Project\obj\Debug\Mediapipe.Unity.Sample.pdb
+C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\AiEditorToolsSdk.dll
+C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Newtonsoft.Json.pdb
+C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Newtonsoft.Json.xml

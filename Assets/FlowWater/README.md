@@ -8,7 +8,7 @@ Enter Play Mode in `Assets/Scenes/TemplateA.unity`. The module creates a runtime
 
 ## WATER encounter
 
-The independent `WaterWordEncounter` observes direct `Fruit_*` children of the existing `Canvas/AlphabetBar`. It uses sibling order, which is the existing fruit generation order, and recomputes from surviving fruit objects after erasure. Only the latest five displayed letters spelling WATER in that order trigger the effect. Older letters can remain, but an extra letter within the latest five prevents a match until corrected. A 0.2 second stable match starts one sweep. No existing letter, rain or hand tracking script is edited or referenced by type.
+The independent `WaterWordEncounter` observes direct `Typed_*` children of the existing `Canvas/AlphabetBar`. It uses sibling order, which is the typewriter insertion order, and recomputes from surviving letters after fingertip erasure. Only the latest five displayed letters spelling WATER in that order trigger the effect. Older letters can remain, but an extra letter within the latest five prevents a match until corrected. A 0.2 second stable match starts one sweep. No existing typewriter, rain or hand tracking script is edited or referenced by type.
 
 The fire now reveals downward over 45 seconds, giving the player time to compose a word. It remains available until WATER is completed; there is no spelling timeout.
 

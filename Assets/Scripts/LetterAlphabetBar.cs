@@ -7,8 +7,9 @@
 //   - 容忍半径 tolerancePx 内按高斯衰减（与 BottomLine 高光共用同一 σ）
 //   - 半径外 input=0 → 植物萎缩
 //
-// 果实：植物能量长满（触及分割线）→ 在该字母列上方生成 TMP 果实，树冻结；
-//       新果实出现时，所有旧果实整体上推 fruitSpacing 像素。
+// 打字机：植物能量长满（触及分割线）→ 字母键入上半屏左侧的打字机区域，树冻结；
+//       字母按从左到右、从上到下的顺序排列，指尖涂抹可以擦除。
+// 上半屏右侧是威胁（火焰）区，打字机与威胁区之间是 45° 斜分割线。
 
 using System.Collections.Generic;
 using TMPro;
@@ -31,8 +32,9 @@ public class LetterAlphabetBar : MonoBehaviour
     [Header("字母显示（不影响选择与生长规则）")]
     [Tooltip("英文字母专用字体；留空使用工程自带的 LiberationSans SDF，不使用全局乱码雨字体")]
     [SerializeField] private TMP_FontAsset displayFont;
+    /// <summary>GlyphRain 等子组件会读这个来同步字体。</summary>
+    public TMP_FontAsset DisplayFont => displayFont;
     [SerializeField, Min(0f)] private float minimumLetterScreenSize = 18f;
-    [SerializeField, Min(0f)] private float minimumFruitScreenSize = 24f;
     [SerializeField, Min(0f)] private float letterBottomInset = 24f;
 
     [Header("容忍区间（与 BottomLine 高光共用同一高斯宽度）")]
@@ -40,19 +42,57 @@ public class LetterAlphabetBar : MonoBehaviour
     public float tolerancePx = 120f;
 
     [Header("植物参数（生成时传给每棵植物）")]
+    [Tooltip("input=1 时能量从 0 积满所需秒数，越小越快")]
     public float growDuration = 4f;
+    [Tooltip("没有输入时能量从满衰减到 0 所需秒数")]
     public float witherDuration = 5f;
+    [Tooltip("CA 细胞自动机每秒 tick 次数，越大植物长越频繁（与 growDuration 共同决定视觉速度）")]
+    public float tickRate = 8f;
     public Color stemColor = new Color(0.88f, 1f, 0.88f, 1f);
+    [Tooltip("叶片颜色（与枝干区分；恐龙只采摘登记在册的叶片格）")]
+    public Color leafColor = new Color(0.42f, 1f, 0.5f, 1f);
+    [Tooltip("叶片大小：1≈小，2≈大，3≈超大。大叶片可当恐龙跳台（越大生成越稀疏）")]
+    [Range(0, 3)] public int leafBlobRadius = 2;
 
-    [Header("果实（植物长到分割线后）")]
-    public int fruitFontSize = 40;
-    public Color fruitColor = new Color(1f, 0.9f, 0.4f, 1f);
-    [Tooltip("新果实出现时，已有果实向上推的像素距离")]
-    public float fruitSpacing = 56f;
-    [Tooltip("果实底部与分割线的初始间距（像素）")]
-    public float fruitBaseOffset = 8f;
-    [Tooltip("果实上推平滑速度（越大越快）")]
-    public float fruitRiseSpeed = 6f;
+    [Header("上半屏：左打字机 / 右威胁（斜 45° 分割）")]
+    public Color typewriterColor = new Color(0.55f, 1f, 0.78f, 1f);
+    public Color typewriterCaretColor = new Color(0.55f, 1f, 0.78f, 0.7f);
+    [Tooltip("打字机基础字号（参考分辨率像素）")]
+    public float typewriterFontSize = 84f;
+    [Tooltip("打字块左边距（像素）")]
+    public float typewriterLeftInset = 64f;
+    [Tooltip("打字块距屏幕顶部的距离（像素）。参考图里打字块在上半屏偏下位置，留足上方呼吸空间")]
+    public float typewriterTopInset = 260f;
+    [Tooltip("打字机重排平滑速度（越大越快）")]
+    public float typewriterReflowSpeed = 16f;
+
+    [Header("斜分割线（打字机区与威胁区的边界，角度可调）")]
+    [Range(0.15f, 0.7f), Tooltip("斜线上端在屏幕宽度上的起始比例（0=最左，1=最右）")]
+    public float diagonalTopFraction = 0.46f;
+    [Range(15f, 75f), Tooltip("与水平线的夹角（°）。45° 时水平推进速度=垂直推进速度，越小火焰越平，越大火焰越陡")]
+    public float diagonalAngleDeg = 45f;
+    public Color diagonalColor = new Color(0.55f, 1f, 0.78f, 0.55f);
+    public float diagonalThickness = 2f;
+
+    [Header("打字机字母 发光/描边（编辑器可调，自动保存）")]
+    public bool typewriterUseOutline = true;
+    public Color typewriterOutlineColor = new Color(0.02f, 0.14f, 0.07f, 1f);
+    [Range(0f, 1f)] public float typewriterOutlineWidth = 0.22f;
+    public bool typewriterUseGlow = true;
+    public Color typewriterGlowColor = new Color(0.45f, 1f, 0.72f, 1f);
+    [Range(0f, 2f)] public float typewriterGlowInner = 0.5f;
+    [Range(0f, 6f)] public float typewriterGlowOuter = 1.6f;
+    [Range(0.5f, 6f)] public float typewriterGlowPower = 2.8f;
+
+    [Header("底部 26 字母 发光/描边（编辑器可调，自动保存）")]
+    public bool labelUseOutline = true;
+    public Color labelOutlineColor = new Color(0.04f, 0.05f, 0.05f, 1f);
+    [Range(0f, 1f)] public float labelOutlineWidth = 0.08f;
+    public bool labelUseGlow = true;
+    public Color labelGlowColor = new Color(1f, 1f, 1f, 0.85f);
+    [Range(0f, 2f)] public float labelGlowInner = 0.4f;
+    [Range(0f, 6f)] public float labelGlowOuter = 1.2f;
+    [Range(0.5f, 6f)] public float labelGlowPower = 2.0f;
 
     [Header("BottomLine 高光联动（拖入 BottomLine 上的 EdgeHitGlow）")]
     [Tooltip("由本组件驱动：高光位置=焦点，高斯宽度=容忍区间")]
@@ -60,8 +100,8 @@ public class LetterAlphabetBar : MonoBehaviour
 
     public enum PlayMode { RayPoint, GlyphRain }
 
-    [Tooltip("结果后树是否冻结保留；关闭则树会继续退化，跌离终点线后同一字母可再次结果")]
-    public bool freezeAfterFruit = true;
+    [Tooltip("字母键入后树是否冻结保留；关闭则树会继续退化，跌离终点线后同一字母可再次键入")]
+    public bool freezeAfterTyping = true;
 
     [Header("玩法模式")]
     [Tooltip("RayPoint=食指射线指点；GlyphRain=双食指屋檐挡雨浇灌")]
@@ -80,18 +120,38 @@ public class LetterAlphabetBar : MonoBehaviour
     private Canvas _canvas;
     private TMP_FontAsset _font;
     private Material _labelMaterial;
+    private Material _typedMaterial;
     private RectTransform _divider;
     private TextMeshProUGUI[] _letterLabels;
     private readonly Vector3[] _dividerCorners = new Vector3[4];
     private readonly Vector3[] _canvasCorners = new Vector3[4];
-    private float _displayLetterSize, _displayFruitSize, _displayRowHeight;
-    private float _displayFruitBase, _displayFruitSpacing;
+    private float _displayLetterSize, _displayRowHeight;
 
     // Glyph rain must land at the actual displayed row, including its safe inset.
     public float LetterRowDisplayHeight => _displayRowHeight > 0f ? _displayRowHeight : letterRowHeight;
 
-    private class FruitEntry { public RectTransform rect; public float targetY; }
-    private readonly List<FruitEntry> _fruits = new List<FruitEntry>();
+    /// <summary>Build() 每创建一棵植物后触发（供恐龙等外部系统订阅，避免全局搜索）</summary>
+    public event System.Action<LetterPlant> onPlantSpawned;
+
+    /// <summary>当前全部植物（Build 之后有效；供外部一次性登记既有植物）</summary>
+    public IReadOnlyList<LetterPlant> Plants => _plants;
+
+    private class TypedEntry
+    {
+        public RectTransform rect;
+        public Vector2 target;
+        public float alpha;
+    }
+    private readonly List<TypedEntry> _typed = new List<TypedEntry>();
+
+    private TextMeshProUGUI _caret;
+    private RectTransform _upperRig;
+    private RectTransform _diagStart;
+    private RectTransform _diagEnd;
+    private Image _diagLine;
+    private float _typedFontSize, _typedCellWidth, _typedCellHeight;
+    private int _typedColumns, _typedRows;
+    private float _typedOriginX, _typedOriginY;
 
     private void Awake()
     {
@@ -101,6 +161,7 @@ public class LetterAlphabetBar : MonoBehaviour
         if (transform.parent != null)
             _divider = transform.parent.Find("Image") as RectTransform;
         LoadFont();
+        BuildUpperRig();
         Build();
     }
 
@@ -135,11 +196,63 @@ public class LetterAlphabetBar : MonoBehaviour
         else
         {
             _labelMaterial = new Material(_font.material) { name = "Alphabet readable labels", hideFlags = HideFlags.DontSave };
-            _labelMaterial.EnableKeyword("OUTLINE_ON");
-            _labelMaterial.SetColor("_OutlineColor", new Color(0.04f, 0.05f, 0.05f, 1f));
-            _labelMaterial.SetFloat("_OutlineWidth", 0.1f);
+            _typedMaterial = new Material(_font.material) { name = "Typewriter letters", hideFlags = HideFlags.DontSave };
+            ApplyMaterialStyles();
         }
     }
+
+    /// <summary>把 Inspector 上的 glow/outline 参数刷到材质上。OnValidate 和 LoadFont 都调它。</summary>
+    private void ApplyMaterialStyles()
+    {
+        if (_labelMaterial == null || _typedMaterial == null) return;
+
+        // —— 底部 26 字母 ——
+        if (labelUseOutline)
+        {
+            _labelMaterial.EnableKeyword("OUTLINE_ON");
+            _labelMaterial.SetColor("_OutlineColor", labelOutlineColor);
+            _labelMaterial.SetFloat("_OutlineWidth", labelOutlineWidth);
+        }
+        else _labelMaterial.DisableKeyword("OUTLINE_ON");
+
+        if (labelUseGlow)
+        {
+            _labelMaterial.EnableKeyword("GLOW_ON");
+            _labelMaterial.SetColor("_GlowColor", labelGlowColor);
+            _labelMaterial.SetFloat("_GlowInner", labelGlowInner);
+            _labelMaterial.SetFloat("_GlowOuter", labelGlowOuter);
+            _labelMaterial.SetFloat("_GlowPower", labelGlowPower);
+        }
+        else _labelMaterial.DisableKeyword("GLOW_ON");
+
+        // —— 打字机 ——
+        if (typewriterUseOutline)
+        {
+            _typedMaterial.EnableKeyword("OUTLINE_ON");
+            _typedMaterial.SetColor("_OutlineColor", typewriterOutlineColor);
+            _typedMaterial.SetFloat("_OutlineWidth", typewriterOutlineWidth);
+        }
+        else _typedMaterial.DisableKeyword("OUTLINE_ON");
+
+        if (typewriterUseGlow)
+        {
+            _typedMaterial.EnableKeyword("GLOW_ON");
+            _typedMaterial.SetColor("_GlowColor", typewriterGlowColor);
+            _typedMaterial.SetFloat("_GlowInner", typewriterGlowInner);
+            _typedMaterial.SetFloat("_GlowOuter", typewriterGlowOuter);
+            _typedMaterial.SetFloat("_GlowPower", typewriterGlowPower);
+        }
+        else _typedMaterial.DisableKeyword("GLOW_ON");
+    }
+
+#if UNITY_EDITOR
+    /// <summary>编辑器里调 Inspector 参数 → 实时刷新材质（PlayMode 和 EditMode 都生效，退出 Play 保留）</summary>
+    private void OnValidate()
+    {
+        if (_labelMaterial == null || _typedMaterial == null) return;
+        ApplyMaterialStyles();
+    }
+#endif
 
     private void Build()
     {
@@ -147,10 +260,10 @@ public class LetterAlphabetBar : MonoBehaviour
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
             var c = transform.GetChild(i);
-            if (c.name.StartsWith("Slot_") || c.name.StartsWith("Fruit_"))
+            if (c.name.StartsWith("Slot_") || c.name.StartsWith("Typed_") || c.name == "TypewriterCaret")
                 Destroy(c.gameObject);
         }
-        _fruits.Clear();
+        _typed.Clear();
 
         int n = letters.Length;
         _plants = new LetterPlant[n];
@@ -196,11 +309,16 @@ public class LetterAlphabetBar : MonoBehaviour
             var plant = plantGo.GetComponent<LetterPlant>();
             plant.growDuration = growDuration;
             plant.witherDuration = witherDuration;
+            plant.tickRate = tickRate;
             plant.stemColor = stemColor;
+            plant.leafColor = leafColor;
+            plant.leafBlobRadius = leafBlobRadius;
             int idx = i;
-            plant.onFinished += _ => SpawnFruit(idx);
+            plant.onFinished += _ => SpawnTypeLetter(idx);
             _plants[i] = plant;
+            onPlantSpawned?.Invoke(plant);
         }
+        BuildCaret();
         RefreshDisplayLayout(true);
     }
 
@@ -230,22 +348,20 @@ public class LetterAlphabetBar : MonoBehaviour
 
         float letterSize = Mathf.Max(letterFontSize, minimumLetterScreenSize / scale);
         float rowHeight = Mathf.Max(letterRowHeight, letterBottomInset + letterSize * 1.4f + 4f);
-        float fruitBase = Mathf.Max(0f, dividerTop - _rect.rect.yMax) + Mathf.Max(0f, fruitBaseOffset);
-        float fruitSize = Mathf.Max(fruitFontSize, minimumFruitScreenSize / scale);
+
+        bool changed = force || !Mathf.Approximately(_displayLetterSize, letterSize) ||
+            !Mathf.Approximately(_displayRowHeight, rowHeight);
+        _displayLetterSize = letterSize; _displayRowHeight = rowHeight;
+
+        // 上半屏几何每帧重算：屏幕尺寸或分割线位置变化时，打字机与斜线都要跟随
+        float canvasTop = _rect.rect.yMax;
         if (_canvas != null)
         {
             ((RectTransform)_canvas.transform).GetWorldCorners(_canvasCorners);
-            float available = _rect.InverseTransformPoint(_canvasCorners[1]).y - _rect.rect.yMax - fruitBase - 12f;
-            // Keep the newest five letters legible inside the upper area.
-            float fitSize = (available - 4f * 8f) / (5f * 1.4f);
-            if (fitSize > 0f) fruitSize = Mathf.Min(fruitSize, Mathf.Max(12f / scale, fitSize));
+            canvasTop = _rect.InverseTransformPoint(_canvasCorners[1]).y;
         }
-        float fruitStep = Mathf.Max(fruitSpacing, fruitSize * 1.4f + 8f);
-        bool changed = force || !Mathf.Approximately(_displayLetterSize, letterSize) ||
-            !Mathf.Approximately(_displayFruitSize, fruitSize) || !Mathf.Approximately(_displayRowHeight, rowHeight) ||
-            !Mathf.Approximately(_displayFruitBase, fruitBase) || !Mathf.Approximately(_displayFruitSpacing, fruitStep);
-        _displayLetterSize = letterSize; _displayFruitSize = fruitSize; _displayRowHeight = rowHeight;
-        _displayFruitBase = fruitBase; _displayFruitSpacing = fruitStep;
+        UpdateUpperLayout(canvasTop, dividerTop);
+
         if (!changed) return;
 
         for (int i = 0; i < _letterLabels.Length; i++)
@@ -257,13 +373,6 @@ public class LetterAlphabetBar : MonoBehaviour
             var plantRect = (RectTransform)_plants[i].transform;
             plantRect.offsetMin = new Vector2(0f, rowHeight);
         }
-        foreach (var fruit in _fruits)
-        {
-            if (fruit.rect == null) continue;
-            fruit.rect.GetComponent<TextMeshProUGUI>().fontSize = fruitSize;
-            fruit.rect.sizeDelta = new Vector2(fruitSize * 2f, fruitSize * 1.4f);
-        }
-        RepackFruits();
     }
 
     private TextMeshProUGUI CreateLabel(Transform parent, string name, int fontSize, Color color)
@@ -285,59 +394,257 @@ public class LetterAlphabetBar : MonoBehaviour
         return tmp;
     }
 
-    /// <summary>植物到达终点 → 在该字母列、分割线上方生成果实，并把旧果实上推一格</summary>
-    private void SpawnFruit(int letterIndex)
+    /// <summary>上半屏分割线的运行时容器：两个端点标记供 FlowFire 读取，一条可见的 45° 斜线</summary>
+    private void BuildUpperRig()
     {
-        float fx = (letterIndex + 0.5f) / _plants.Length;
-        var tmp = CreateLabel(transform, $"Fruit_{letters[letterIndex]}", fruitFontSize, fruitColor);
-        tmp.text = letters[letterIndex].ToString();
-        tmp.fontSize = _displayFruitSize;
+        if (_rect == null || _rect.parent == null) return;
 
-        var fr = (RectTransform)tmp.transform;
-        fr.anchorMin = fr.anchorMax = new Vector2(fx, 1f); // 锚在条顶边（分割线）
-        fr.pivot = new Vector2(0.5f, 0f);
-        fr.sizeDelta = new Vector2(_displayFruitSize * 2f, _displayFruitSize * 1.4f);
-        fr.anchoredPosition = new Vector2(0f, _displayFruitBase);
+        var existing = _rect.parent.Find("UpperSplitRig");
+        if (existing != null) Destroy(existing.gameObject);
 
-        _fruits.Add(new FruitEntry { rect = fr, targetY = fruitBaseOffset });
-        RepackFruits(); // 旧果实整体上推一格
+        var rigGo = new GameObject("UpperSplitRig", typeof(RectTransform));
+        rigGo.transform.SetParent(_rect.parent, false);
+        rigGo.layer = gameObject.layer;
+        _upperRig = (RectTransform)rigGo.transform;
+        _upperRig.anchorMin = Vector2.zero;
+        _upperRig.anchorMax = Vector2.one;
+        _upperRig.offsetMin = Vector2.zero;
+        _upperRig.offsetMax = Vector2.zero;
+        _upperRig.SetAsLastSibling(); // 斜线压在打字机字母之上
 
-        Debug.Log($"[AlphabetBar] 🍎 {letters[letterIndex]} 结果！当前果实数={_fruits.Count}");
+        _diagStart = CreateRigMarker("UpperSplitStart");
+        _diagEnd = CreateRigMarker("UpperSplitEnd");
+
+        var lineGo = new GameObject("UpperSplitLine", typeof(RectTransform), typeof(Image));
+        lineGo.transform.SetParent(_upperRig, false);
+        lineGo.layer = gameObject.layer;
+        _diagLine = lineGo.GetComponent<Image>();
+        _diagLine.color = diagonalColor;
+        _diagLine.raycastTarget = false;
+        var lineRect = (RectTransform)_diagLine.transform;
+        lineRect.anchorMin = lineRect.anchorMax = new Vector2(0.5f, 0.5f);
+        lineRect.pivot = new Vector2(0.5f, 0.5f);
     }
 
-    /// <summary>擦掉 localPos 半径内的果实（屋檐举到雨区上方时的橡皮擦）。返回是否擦掉一个</summary>
-    public bool EraseFruitAt(Vector2 localPos, float radius)
+    private RectTransform CreateRigMarker(string name)
     {
-        for (int i = 0; i < _fruits.Count; i++)
-        {
-            var f = _fruits[i];
-            if (f.rect == null) { _fruits.RemoveAt(i); RepackFruits(); return true; }
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(_upperRig, false);
+        go.layer = gameObject.layer;
+        var rt = (RectTransform)go.transform;
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = Vector2.zero;
+        return rt;
+    }
 
-            if ((FruitLocalPos(f) - localPos).sqrMagnitude <= radius * radius)
+    /// <summary>打字机光标：显示在下一个待键入位置</summary>
+    private void BuildCaret()
+    {
+        _caret = CreateLabel(transform, "TypewriterCaret", Mathf.RoundToInt(typewriterFontSize), typewriterCaretColor);
+        if (_typedMaterial != null) _caret.fontSharedMaterial = _typedMaterial;
+        _caret.text = "_";
+        var rt = _caret.rectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+    }
+
+    /// <summary>植物到达终点 → 把字母键入上半屏左侧的打字机区域</summary>
+    private void SpawnTypeLetter(int letterIndex)
+    {
+        char c = letters[letterIndex];
+        var tmp = CreateLabel(transform, $"Typed_{c}", Mathf.RoundToInt(_typedFontSize), typewriterColor);
+        if (_typedMaterial != null) tmp.fontSharedMaterial = _typedMaterial;
+        tmp.text = c.ToString();
+        tmp.color = new Color(typewriterColor.r, typewriterColor.g, typewriterColor.b, 0f);
+
+        var rt = tmp.rectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = new Vector2(_typedCellWidth, _typedCellHeight);
+
+        var entry = new TypedEntry { rect = rt, alpha = 0f };
+        _typed.Add(entry);
+        EnsureTypewriterCapacity();
+        ApplyTypewriterLayout();
+        rt.anchoredPosition = entry.target - new Vector2(0f, 10f);
+
+        Debug.Log($"[AlphabetBar] ⌨ {c} 已键入，当前字母数={_typed.Count}");
+    }
+
+    /// <summary>擦掉 localPos 半径内的打字机字母（指尖涂抹）。返回是否擦掉一个</summary>
+    public bool EraseTypedAt(Vector2 localPos, float radius)
+    {
+        for (int i = 0; i < _typed.Count; i++)
+        {
+            var e = _typed[i];
+            if (e.rect == null)
             {
-                Destroy(f.rect.gameObject);
-                _fruits.RemoveAt(i);
-                RepackFruits(); // 剩余果实重新分配 offset，动画滑到新位置
+                _typed.RemoveAt(i);
+                ApplyTypewriterLayout();
+                return true;
+            }
+
+            if ((TypedLocalPos(e) - localPos).sqrMagnitude <= radius * radius)
+            {
+                Destroy(e.rect.gameObject);
+                _typed.RemoveAt(i);
+                ApplyTypewriterLayout(); // 后面的字母重新排到前面的空格
                 return true;
             }
         }
         return false;
     }
 
-    /// <summary>果实当前在 bar 局部坐标里的位置（锚点为 (fx,1)，pivot 落在 anchor + anchoredPosition）</summary>
-    private Vector2 FruitLocalPos(FruitEntry f)
+    /// <summary>字母当前在 bar 局部坐标里的中心位置（锚点固定在左上角）</summary>
+    private Vector2 TypedLocalPos(TypedEntry e)
     {
-        var r = _rect.rect;
-        Vector2 ap = f.rect.anchoredPosition;
-        // pivot 在果实底边，判定点取果实文字中心（往上约 0.7 个字高）
-        return new Vector2(r.xMin + f.rect.anchorMin.x * r.width + ap.x, r.yMax + ap.y + _displayFruitSize * 0.7f);
+        return new Vector2(_rect.rect.xMin + e.rect.anchoredPosition.x,
+                           _rect.rect.yMax + e.rect.anchoredPosition.y);
     }
 
-    /// <summary>按创建顺序重排 targetY：最新果实贴分割线，越老越高</summary>
-    private void RepackFruits()
+    /// <summary>根据屏幕上半区与斜线边界，更新打字机排版和斜线端点</summary>
+    private void UpdateUpperLayout(float canvasTop, float dividerTop)
     {
-        for (int i = 0; i < _fruits.Count; i++)
-            _fruits[i].targetY = _displayFruitBase + (_fruits.Count - 1 - i) * _displayFruitSpacing;
+        float upperHeight = Mathf.Max(1f, canvasTop - dividerTop);
+        float diagTopX = _rect.rect.xMin + _rect.rect.width * diagonalTopFraction;
+        float angleRad = diagonalAngleDeg * Mathf.Deg2Rad;
+        float diagBottomX = diagTopX + Mathf.Tan(angleRad) * upperHeight;
+
+        // 不要把斜线推到屏幕最右侧，火焰区至少留一点宽度
+        float limit = _rect.rect.xMax - 120f;
+        if (diagBottomX > limit)
+        {
+            float shift = diagBottomX - limit;
+            diagTopX -= shift;
+            diagBottomX = limit;
+        }
+
+        _typedFontSize = Mathf.Max(24f, Mathf.Min(typewriterFontSize, upperHeight * 0.2f));
+        _typedCellWidth = _typedFontSize * 0.86f;
+        _typedCellHeight = _typedFontSize * 1.28f;
+
+        float left = _rect.rect.xMin + typewriterLeftInset;
+        float top = canvasTop - typewriterTopInset;
+        float bottom = dividerTop + 24f;
+        float usableWidth = Mathf.Max(_typedCellWidth, diagTopX - 24f - left);
+        float usableHeight = Mathf.Max(_typedCellHeight, top - bottom);
+        _typedColumns = Mathf.Max(1, Mathf.FloorToInt(usableWidth / _typedCellWidth));
+        _typedRows = Mathf.Max(1, Mathf.FloorToInt(usableHeight / _typedCellHeight));
+        _typedOriginX = left;
+        _typedOriginY = top;
+
+        UpdateDiagonalLine(diagTopX, diagBottomX, canvasTop, dividerTop);
+        EnsureTypewriterCapacity();
+        ApplyTypewriterLayout();
+    }
+
+    private void UpdateDiagonalLine(float topX, float bottomX, float topY, float bottomY)
+    {
+        if (_upperRig == null || _diagLine == null) return;
+
+        Vector2 top = RectToRigLocal(new Vector2(topX, topY));
+        Vector2 bottom = RectToRigLocal(new Vector2(bottomX, bottomY));
+        _diagStart.anchoredPosition = top;
+        _diagEnd.anchoredPosition = bottom;
+
+        Vector2 delta = bottom - top;
+        _diagLine.rectTransform.anchoredPosition = (top + bottom) * 0.5f;
+        _diagLine.rectTransform.sizeDelta = new Vector2(delta.magnitude, Mathf.Max(1f, diagonalThickness));
+        _diagLine.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+        _diagLine.color = diagonalColor;
+    }
+
+    private Vector2 RectToRigLocal(Vector2 pointInBar)
+    {
+        Vector3 world = _rect.TransformPoint(new Vector3(pointInBar.x, pointInBar.y, 0f));
+        Vector2 local = _upperRig.InverseTransformPoint(world);
+        return local - _upperRig.rect.center;
+    }
+
+    private void EnsureTypewriterCapacity()
+    {
+        int capacity = Mathf.Max(1, _typedColumns * _typedRows);
+        while (_typed.Count > capacity)
+        {
+            var oldest = _typed[0];
+            _typed.RemoveAt(0);
+            if (oldest.rect != null) Destroy(oldest.rect.gameObject);
+        }
+    }
+
+    /// <summary>按键入顺序从左到右、从上到下排字；光标跟在最后一个字母之后</summary>
+    private void ApplyTypewriterLayout()
+    {
+        if (_typedColumns <= 0) return;
+
+        for (int i = 0; i < _typed.Count; i++)
+        {
+            var e = _typed[i];
+            if (e.rect == null) continue;
+
+            int row = i / _typedColumns;
+            int col = i % _typedColumns;
+            e.target = new Vector2(
+                _typedOriginX + (col + 0.5f) * _typedCellWidth - _rect.rect.xMin,
+                _typedOriginY - (row + 0.5f) * _typedCellHeight - _rect.rect.yMax);
+            e.rect.sizeDelta = new Vector2(_typedCellWidth, _typedCellHeight);
+
+            var tmp = e.rect.GetComponent<TextMeshProUGUI>();
+            if (tmp != null) tmp.fontSize = _typedFontSize;
+        }
+        UpdateCaretLayout();
+    }
+
+    private void UpdateCaretLayout()
+    {
+        if (_caret == null || _typedColumns <= 0) return;
+
+        int capacity = Mathf.Max(1, _typedColumns * _typedRows);
+        int index = _typed.Count;
+        if (index >= capacity)
+        {
+            _caret.gameObject.SetActive(false);
+            return;
+        }
+
+        _caret.gameObject.SetActive(true);
+        int row = index / _typedColumns;
+        int col = index % _typedColumns;
+        _caret.rectTransform.anchoredPosition = new Vector2(
+            _typedOriginX + (col + 0.5f) * _typedCellWidth - _rect.rect.xMin,
+            _typedOriginY - (row + 0.5f) * _typedCellHeight - _rect.rect.yMax);
+        _caret.rectTransform.sizeDelta = new Vector2(_typedCellWidth, _typedCellHeight);
+        _caret.fontSize = _typedFontSize;
+    }
+
+    private void AnimateTypewriter(float dt)
+    {
+        float moveK = 1f - Mathf.Exp(-typewriterReflowSpeed * dt);
+        float fadeK = 1f - Mathf.Exp(-12f * dt);
+
+        foreach (var e in _typed)
+        {
+            if (e.rect == null) continue;
+
+            if (e.alpha < 1f)
+            {
+                e.alpha = Mathf.Min(1f, Mathf.Lerp(e.alpha, 1f, fadeK));
+                var tmp = e.rect.GetComponent<TextMeshProUGUI>();
+                if (tmp != null)
+                {
+                    Color c = typewriterColor;
+                    c.a *= e.alpha;
+                    tmp.color = c;
+                }
+            }
+
+            if ((e.rect.anchoredPosition - e.target).sqrMagnitude > 0.01f)
+                e.rect.anchoredPosition = Vector2.Lerp(e.rect.anchoredPosition, e.target, moveK);
+        }
+
+        if (_caret != null && _caret.gameObject.activeSelf)
+            _caret.canvasRenderer.SetAlpha(0.35f + 0.65f * Mathf.Abs(Mathf.Sin(Time.time * 3.2f)));
     }
 
     private void LateUpdate()
@@ -345,15 +652,8 @@ public class LetterAlphabetBar : MonoBehaviour
         if (_plants == null) return;
         RefreshDisplayLayout();
 
-        // —— 果实上推动画 ——
-        float k = 1f - Mathf.Exp(-fruitRiseSpeed * Time.deltaTime);
-        foreach (var f in _fruits)
-        {
-            if (f.rect == null) continue;
-            Vector2 pos = f.rect.anchoredPosition;
-            pos.y = Mathf.Lerp(pos.y, f.targetY, k);
-            f.rect.anchoredPosition = pos;
-        }
+        // —— 打字机字母淡入 / 重排动画 ——
+        AnimateTypewriter(Time.deltaTime);
 
         // —— 模式联动开关 ——
         bool rainMode = playMode == PlayMode.GlyphRain && glyphRain != null;
@@ -367,6 +667,7 @@ public class LetterAlphabetBar : MonoBehaviour
     private void OnDestroy()
     {
         if (_labelMaterial != null) Destroy(_labelMaterial);
+        if (_typedMaterial != null) Destroy(_typedMaterial);
     }
 
     /// <summary>模式一：食指射线指点（原逻辑）</summary>
@@ -403,7 +704,7 @@ public class LetterAlphabetBar : MonoBehaviour
                 else input = Mathf.Exp(-(d * d) / (2f * sigmaPx * sigmaPx));      // 容忍区高斯衰减
             }
             if (input < 0.02f) input = 0f; // 截断微小输入，否则植物永不退化
-            _plants[i].freezeWhenFinished = freezeAfterFruit;
+            _plants[i].freezeWhenFinished = freezeAfterTyping;
             _plants[i].SetFocus(input);
         }
 
@@ -449,7 +750,7 @@ public class LetterAlphabetBar : MonoBehaviour
                 input = Mathf.Max(input, coverage * apertureInput);
             }
             if (input < 0.02f) input = 0f; // 热量指数衰减永远趋近 0 但不归零，截断它植物才能进入退化
-            _plants[i].freezeWhenFinished = freezeAfterFruit;
+            _plants[i].freezeWhenFinished = freezeAfterTyping;
             _plants[i].SetFocus(input);
         }
 

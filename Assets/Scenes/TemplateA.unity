@@ -333,9 +333,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 60}
-  m_SizeDelta: {x: 0, y: 50}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 34.999985}
+  m_SizeDelta: {x: 0, y: 3}
+  m_Pivot: {x: 0, y: 0}
 --- !u!114 &339155647
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -349,7 +349,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.11320752, g: 0.11320752, b: 0.11320752, a: 1}
+  m_Color: {r: 0.6761006, g: 1, b: 0.94514185, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -966,22 +966,47 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45c7a8c7af4fd964c9f8588e50d84fce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LetterAlphabetBar
-  rayProvider: {fileID: 0}
+  rayProvider: {fileID: 809319409}
   letters: ABCDEFGHIJKLMNOPQRSTUVWXYZ
   letterFontSize: 28
-  letterColor: {r: 0.92, g: 0.92, b: 0.92, a: 1}
+  letterColor: {r: 0.77672946, g: 1, b: 0.89667237, a: 1}
   letterRowHeight: 48
-  tolerancePx: 20
-  growDuration: 4
-  witherDuration: 5
+  displayFont: {fileID: 11400000, guid: e6560715194906242bd1cf6194845f99, type: 2}
+  minimumLetterScreenSize: 18
+  letterBottomInset: 24
+  tolerancePx: 15
+  growDuration: 20
+  witherDuration: 12
+  tickRate: 8
   stemColor: {r: 1, g: 1, b: 1, a: 1}
-  fruitFontSize: 40
-  fruitColor: {r: 1, g: 0.9, b: 0.4, a: 1}
-  fruitSpacing: 28
-  fruitBaseOffset: 64
-  fruitRiseSpeed: 16
+  typewriterColor: {r: 0.55, g: 1, b: 0.78, a: 1}
+  typewriterCaretColor: {r: 0.55, g: 1, b: 0.78, a: 0.7}
+  typewriterFontSize: 84
+  typewriterLeftInset: 64
+  typewriterTopInset: 312
+  typewriterReflowSpeed: 16
+  diagonalTopFraction: 0.46
+  diagonalAngleDeg: 45
+  diagonalColor: {r: 1, g: 1, b: 1, a: 0}
+  diagonalThickness: 0
+  typewriterUseOutline: 1
+  typewriterOutlineColor: {r: 0.56494987, g: 0.91194963, b: 0.7104659, a: 1}
+  typewriterOutlineWidth: 0.135
+  typewriterUseGlow: 0
+  typewriterGlowColor: {r: 0.45, g: 1, b: 0.72, a: 1}
+  typewriterGlowInner: 0.3
+  typewriterGlowOuter: 0.18
+  typewriterGlowPower: 0.5
+  labelUseOutline: 1
+  labelOutlineColor: {r: 0.4261302, g: 0.7924528, b: 0.7924528, a: 1}
+  labelOutlineWidth: 0.265
+  labelUseGlow: 0
+  labelGlowColor: {r: 1, g: 1, b: 1, a: 0.85}
+  labelGlowInner: 0
+  labelGlowOuter: 1.2
+  labelGlowPower: 2
   bottomGlow: {fileID: 631631432}
-  freezeAfterFruit: 0
+  freezeAfterTyping: 0
   playMode: 1
   glyphRain: {fileID: 1661171680}
   rainHeatDecay: 2.2
@@ -1002,22 +1027,23 @@ MonoBehaviour:
   rayProvider: {fileID: 0}
   spawnRate: 32
   fallSpeedPx: 420
+  dropAngleDeg: 3
   fontSize: 16
   glyphColor: {r: 0.65, g: 1, b: 0.65, a: 0.9}
   glyphPool: abcdefghijklmnopqrstuvwxyz!@$#%^&*()
-  headColor: {r: 0.85, g: 1, b: 0.9, a: 1}
+  headColor: {r: 0.75157225, g: 1, b: 0.87817526, a: 1}
   trailLength: 6
   trailSpacingFactor: 1.05
   trailFade: 0.72
-  glyphFlickerRate: 2.5
+  glyphFlickerRate: 0
   splashSigmaPx: 30
-  waterPerDrop: 0.35
+  waterPerDrop: 0.6
   rainEnabled: 0
   leftTipColor: {r: 0.4, g: 0.9, b: 1, a: 1}
   rightTipColor: {r: 1, g: 0.65, b: 0.35, a: 1}
   roofColor: {r: 1, g: 1, b: 1, a: 0.55}
   tipDotSize: 18
-  roofThickness: 3
+  roofThickness: 2
   eraserEnabled: 1
   eraseRadiusPx: 30
   landSplashColor: {r: 0.75, g: 1, b: 0.75, a: 0.9}
@@ -1717,6 +1743,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571076842583978916, guid: 140d1d2c406167c50819d89f86d9092e,
+        type: 3}
+      propertyPath: m_Color.b
+      value: 0.1509434
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571076842583978916, guid: 140d1d2c406167c50819d89f86d9092e,
+        type: 3}
+      propertyPath: m_Color.g
+      value: 0.1509434
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571076842583978916, guid: 140d1d2c406167c50819d89f86d9092e,
+        type: 3}
+      propertyPath: m_Color.r
+      value: 0.1509434
       objectReference: {fileID: 0}
     - target: {fileID: 8571076843237194833, guid: 140d1d2c406167c50819d89f86d9092e,
         type: 3}
