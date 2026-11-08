@@ -9,7 +9,8 @@ using UnityEngine;
 [RequireComponent(typeof(SpriteRenderer))]
 public class DinoAgent : MonoBehaviour
 {
-    public enum State { Idle, Wandering, SeekingLeaf, CollectingLeaf, BuildingNest, Resting }
+    public enum State { Idle, Wandering, SeekingLeaf, CollectingLeaf, BuildingNest, Resting,
+                        Scared, Escaping, NoticeBall, ChasingBall, PlayingBall }
 
     [Header("引用（字母树容器，用于订阅植物事件）")]
     [SerializeField] private LetterAlphabetBar bar;
@@ -57,9 +58,15 @@ public class DinoAgent : MonoBehaviour
 
     [Header("搭建庇护所")]
     public int leavesPerNest = 5;
-    [Tooltip("庇护所的 x 坐标（建在地面 groundY 上，建成后长期存在）")]
-    public float nestX = 0f;
+    [Tooltip("庇护所的 x 坐标（靠最左侧墙，建成后长期存在）")]
+    public float nestX = -8.75f;
     public float buildDuration = 4f;
+    [Tooltip("球的初始 x 坐标（最右侧，玩家向左垫入房子入口）")]
+    public float ballSpawnX = 7.5f;
+    [Tooltip("右侧门洞宽度（列数）。越大越容易把球垫进去，恐龙也能整只睡在开口下")]
+    public int nestDoorCols = 6;
+    [Tooltip("右侧门洞高度（行数）。要让恐龙整只站得进开口下")]
+    public int nestDoorRows = 7;
     [Tooltip("庇护所用多少个字符搭成（列）：越大越气派")]
     public int nestCols = 13;
     [Tooltip("庇护所用多少个字符搭成（行）")]
@@ -73,6 +80,22 @@ public class DinoAgent : MonoBehaviour
     public float restDuration = 6f;
     [Tooltip("两次休息之间的最小间隔（秒）")]
     public float restCooldown = 25f;
+
+    [Header("威胁响应（红字符）")]
+    [Tooltip("受惊硬直时间（原地抖动）")]
+    public float scareDuration = 0.6f;
+    [Tooltip("逃离持续时间")]
+    public float escapeDuration = 2.6f;
+    [Tooltip("逃离时的速度倍率")]
+    public float escapeSpeedMul = 1.45f;
+
+    [Header("玩球")]
+    [Tooltip("注意到球的感知半径")]
+    public float ballNoticeRange = 7f;
+    [Tooltip("判定可以顶球的横向距离")]
+    public float ballPlayRange = 0.6f;
+    [Tooltip("顶球后球的向上速度（BouncingBall.dinoBounceSpeed 会覆盖它，以球那边为准时留 0）")]
+    public float dinoHeadBounceSpeed = 6.2f;
 
     [Header("外观")]
     [Tooltip("整体缩放（1 = dino.png 原始尺寸）")]
@@ -116,6 +139,13 @@ public class DinoAgent : MonoBehaviour
     private float _failedJumpWindowStart;
     private float _jumpBanUntil;       // 禁跳截止时间
     private bool _holdInAir;           // 采摘时悬在叶片上
+    private bool _nestBuilt;           // 庇护所是否已完工（中断后可从当前进度续建）
+    private float _scareShake;         // 受惊抖动动画量 0..1
+    private Vector3 _threatPos;        // 最近一次感知到的威胁位置
+    private bool _threatActive;        // 场上是否有红色威胁（ThreatSystem 节流广播）
+    private BouncingBall _ball;        // 场上的弹力球（Scheduler 注入引用，恐龙不轮询）
+    private struct NestDebris { public Transform T; public SpriteRenderer Sr; public Vector3 Vel; public float Spin, Life; }
+    private readonly List<NestDebris> _nestDebris = new List<NestDebris>(); // 巢被破坏时字符飞散
     private readonly Dictionary<int, float> _abandonedUntil = new Dictionary<int, float>(); // 暂时够不着的叶片 → 恢复时间
     private struct Puff { public Transform T; public SpriteRenderer Sr; public float Life, MaxLife; public Vector3 Vel; public float Spin, Gravity, Drag; }
     private readonly List<Puff> _puffs = new List<Puff>();
@@ -130,6 +160,10 @@ public class DinoAgent : MonoBehaviour
     private readonly List<NestCell> _nestCells = new List<NestCell>();
     private float _nestProgress;   // 0..1 建造进度
     private static Sprite _shadeSprite;
+
+    // 门洞世界范围（球进门检测 + 睡觉落点用）
+    private float _doorLeftX, _doorRightX, _doorBottomY, _doorTopY, _doorCenterX;
+    private float _doorFlashTimer;  // 球进门后的全屏闪光计时
 
     private readonly HashSet<LetterPlant> _registered = new HashSet<LetterPlant>();
     private struct TrackedLeaf { public LetterPlant Plant; public int CellIndex; }
@@ -258,7 +292,12 @@ public class DinoAgent : MonoBehaviour
         if (_restCooldownTimer > 0f) _restCooldownTimer -= dt;
         if (_hopCooldownTimer > 0f) _hopCooldownTimer -= dt;
         _squash = Mathf.Lerp(_squash, 0f, dt * 8f);
+        _scareShake = Mathf.Max(0f, _scareShake - dt * 1.6f);
         _wantJump = false;
+
+        // 威胁中断（最高优先级）：红色字符靠近时任何状态都可被打断（含建巢——回来会续建）
+        if (_threatActive && _state != State.Scared && _state != State.Escaping)
+            Enter(State.Escaping);
 
         switch (_state)
         {
@@ -268,11 +307,23 @@ public class DinoAgent : MonoBehaviour
             case State.CollectingLeaf: UpdateCollecting(); break;
             case State.BuildingNest: UpdateBuildingNest(dt); break;
             case State.Resting: UpdateResting(dt); break;
+            case State.Scared: UpdateScared(); break;
+            case State.Escaping: UpdateEscaping(); break;
+            case State.NoticeBall: UpdateNoticeBall(); break;
+            case State.ChasingBall: UpdateChasingBall(); break;
+            case State.PlayingBall: UpdatePlayingBall(); break;
         }
+
+        // 球进门检测：球进入房子右侧门洞 → 全屏特效 + 重新在最右侧生成球
+        CheckBallInDoor();
+
+        // 全屏闪光计时衰减
+        if (_doorFlashTimer > 0f) _doorFlashTimer -= dt * 2f;
 
         ApplyMotion(dt);
         ApplyVisuals(dt);
         UpdateNestCellAnim(dt);
+        UpdateNestDebris(dt);
         UpdatePuffs(dt);
     }
 
@@ -309,13 +360,42 @@ public class DinoAgent : MonoBehaviour
             case State.BuildingNest:
                 _stateLimit = buildDuration + 30f; // 含走路时间的兜底
                 _desiredX = Mathf.Clamp(nestX, boundsXMin, boundsXMax);
-                _buildTimer = -1f;
+                // 续建：巢已开工未完工（被威胁打断）→ 从当前进度继续，不重摆空壳
+                _buildTimer = (_nest != null && !_nestBuilt) ? 0.15f : -1f;
                 _nextBuildHop = 0.7f;
                 break;
             case State.Resting:
                 _stateLimit = restDuration + 30f;
-                _desiredX = (_nest != null ? _nest.position.x : nestX) + Random.Range(-0.3f, 0.3f);
+                // 睡在右侧开口正下方（贴着门洞中心，视觉上"钻进窝里"）
+                _desiredX = (_nestBuilt && _nest != null)
+                    ? _doorCenterX + Random.Range(-0.15f, 0.15f)
+                    : (_nest != null ? _nest.position.x : nestX) + Random.Range(-0.3f, 0.3f);
                 _restTimer = -1f;
+                break;
+            case State.Scared:
+                _stateLimit = scareDuration;
+                _desiredX = transform.position.x; // 硬直：原地抖动
+                _scareShake = 1f;
+                _wantJump = false;
+                break;
+            case State.Escaping:
+                _stateLimit = escapeDuration;
+                // 朝远离威胁的方向跑（贴边时反向）
+                float away = transform.position.x >= _threatPos.x ? 1f : -1f;
+                if (transform.position.x + away * 2f > boundsXMax || transform.position.x + away * 2f < boundsXMin)
+                    away = -away;
+                _desiredX = Mathf.Clamp(transform.position.x + away * 5f, boundsXMin, boundsXMax);
+                break;
+            case State.NoticeBall:
+                _stateLimit = Random.Range(0.6f, 1.2f);
+                _desiredX = transform.position.x;
+                if (_ball != null) _sr.flipX = (_ball.transform.position.x > transform.position.x) != faceRightByDefault;
+                break;
+            case State.ChasingBall:
+                _stateLimit = 8f;
+                break;
+            case State.PlayingBall:
+                _stateLimit = 5f;
                 break;
         }
     }
@@ -333,10 +413,23 @@ public class DinoAgent : MonoBehaviour
         return cur < (lo + hi) * 0.5f ? hi : lo;
     }
 
-    /// <summary>决策下一状态：建巢 > 找叶子 > 休息(冷却结束) > 闲逛/发呆</summary>
+    /// <summary>决策下一状态：建巢 > 宅家三态(巢建成后：玩球/睡觉/闲逛) > 找叶子 > 休息 > 闲逛/发呆</summary>
     private void DecideNext()
     {
         if (_leafInventory >= leavesPerNest && _nest == null) { Enter(State.BuildingNest); return; }
+
+        // 宅家模式：巢已完工 → 睡觉 / 闲逛 / 玩球三态轮换，不再采叶
+        if (_nestBuilt && _nest != null)
+        {
+            if (_ball != null && Random.value < 0.5f) { Enter(State.NoticeBall); return; }
+            if (_restCooldownTimer <= 0f) { Enter(State.Resting); return; }
+            Enter(State.Wandering);
+            return;
+        }
+
+        // 建到一半被威胁打断 → 立刻回去续建（材料还在库存里，BeginNestBuild 不会重摆空壳）
+        if (_nest != null && !_nestBuilt) { Enter(State.BuildingNest); return; }
+
         CleanupLeaves();
         if (_leaves.Count > 0) { Enter(State.SeekingLeaf); return; }
         if (_nest != null && _restCooldownTimer <= 0f) { Enter(State.Resting); return; }
@@ -345,11 +438,38 @@ public class DinoAgent : MonoBehaviour
 
     private void UpdateIdle()
     {
+        // 球进入感知范围 → 停下发呆，先观察（球优先级在日常之上）
+        if (_ball != null && _ball.IsActive
+            && Mathf.Abs(_ball.transform.position.x - transform.position.x) < ballNoticeRange)
+        { Enter(State.NoticeBall); return; }
+
+        // 宅家模式不再追叶子（叶子是建巢材料，巢好了就不缺）
+        if (!_nestBuilt)
+        {
+            // Idle 期间如果有叶子出现（CA 刚长出来），直接去摘，别傻等到超时
+            if (!CanJumpNow())
+            {
+                // 禁跳期也不能干站：如果有站着够得着的叶子，立刻去
+                foreach (var leaf in _leaves)
+                {
+                    if (!leaf.Plant.IsLeafAlive(leaf.CellIndex)) continue;
+                    if (InBiteRange(leaf.Plant.CellToWorld(leaf.CellIndex), 1.5f))
+                    { DecideNext(); return; }
+                }
+            }
+            else if (_leaves.Count > 0) { DecideNext(); return; }
+        }
+
         if (_stateTime >= _stateLimit) DecideNext();
     }
 
     private void UpdateWandering(float dt)
     {
+        // 边逛边留意球
+        if (_ball != null && _ball.IsActive
+            && Mathf.Abs(_ball.transform.position.x - transform.position.x) < ballNoticeRange)
+        { Enter(State.NoticeBall); return; }
+
         if (Random.value < wanderHopChancePerSec * dt) _wantJump = true; // ApplyMotion 里只允许落地时起跳
         bool arrived = Mathf.Abs(_desiredX - transform.position.x) <= arriveDistance;
         if (arrived || _stateTime >= _stateLimit) DecideNext();
@@ -380,10 +500,15 @@ public class DinoAgent : MonoBehaviour
                     || (transform.position.x >= boundsXMax - 0.02f && leafWorld.x > transform.position.x + 0.05f);
         if (atBound) { AbandonTarget(); return; }
 
-        // 发呆看门狗：已贴到目标跟前、既咬不到也不会跳（比如叶子在脚下方）→ 换一片，别盯着看
-        bool idleAtTarget = _grounded && dx <= arriveDistance * 2f && dy <= harvestDistance * 0.75f;
-        _stuckTimer = idleAtTarget ? _stuckTimer + Time.deltaTime : 0f;
-        if (_stuckTimer >= 1.5f) { AbandonTarget(); return; }
+        // 发呆看门狗：任何"站在叶子正下方、咬不到、也跳不了"的状态都算 stuck
+        // —— 早期只盯"叶子在脚边"，漏掉了禁跳期 + 叶子在上方的场景
+        bool atTarget = _grounded && dx <= Mathf.Max(arriveDistance * 2f, harvestDistance * 1.2f);
+        bool canDoNothing = !InBiteRange(leafWorld);
+        bool jumpBlocked = !CanJumpNow() || (CanJumpNow() && (dx >= harvestDistance * 0.5f
+                          || dy <= harvestDistance * 0.75f
+                          || dy > ReachTopY - transform.position.y));
+        _stuckTimer = (atTarget && canDoNothing && jumpBlocked) ? _stuckTimer + Time.deltaTime : 0f;
+        if (_stuckTimer >= 3f) { AbandonTarget(); return; }
 
         // 站到正下方再起跳；已经被判定够不着（ReachTopY 过滤）的不会走到这里
         if (CanJumpNow() && dx < harvestDistance * 0.5f && dy > harvestDistance * 0.75f
@@ -411,6 +536,7 @@ public class DinoAgent : MonoBehaviour
                 _leafInventory++;
                 _tintTimer = 0.75f;          // 绿色闪光反馈
                 _squash = 1f;                // 咬一口的挤压
+                AudioManager.PlayAt(Sfx.LeafHarvest, leafPos);
                 SpawnPuff(leafPos, new Color(0.55f, 1f, 0.6f, 0.95f), 12, 2.6f); // 叶片碎屑
                 SpawnLeafDebris(leafPos);    // 叶片本体碎片飘落
                 if (_grounded) { _vy = jumpVelocity * 0.55f; _grounded = false; } // 开心小跳
@@ -441,8 +567,11 @@ public class DinoAgent : MonoBehaviour
         {
             _nestProgress = 1f;
             RevealNestCells(1f);
+            _nestBuilt = true; // 完工：进入宅家模式（睡觉/闲逛/玩球），不再采叶
             _leafInventory -= leavesPerNest;
             _wantJump = true;
+            AudioManager.PlayAt(Sfx.NestComplete, _nest.position);
+            SpawnBall(); // 巢完工 → 生成长期球（生命周期与巢共享）
             DecideNext();
         }
     }
@@ -456,6 +585,189 @@ public class DinoAgent : MonoBehaviour
         {
             _restCooldownTimer = restCooldown;
             DecideNext();
+        }
+    }
+
+    // —————————————— 威胁 / 玩球状态 ——————————————
+
+    private void UpdateScared()
+    {
+        if (_stateTime >= _stateLimit)
+            Enter(_threatActive ? State.Escaping : State.Wandering);
+    }
+
+    private void UpdateEscaping()
+    {
+        if (_stateTime >= _stateLimit) { DecideNext(); return; }
+        // 威胁解除且已跑出一段距离 → 提前恢复日常
+        if (!_threatActive && _stateTime > escapeDuration * 0.5f) DecideNext();
+    }
+
+    private void UpdateNoticeBall()
+    {
+        if (_ball == null) { DecideNext(); return; }
+        if (_stateTime >= _stateLimit)
+        {
+            float d = Mathf.Abs(_ball.transform.position.x - transform.position.x);
+            if (d < ballNoticeRange * 1.5f && Random.value < 0.85f) Enter(State.ChasingBall);
+            else DecideNext(); // 15% 概率不感兴趣，回头干正事
+        }
+    }
+
+    private void UpdateChasingBall()
+    {
+        if (_ball == null) { DecideNext(); return; }
+        _desiredX = _ball.transform.position.x;
+        float dx = Mathf.Abs(_desiredX - transform.position.x);
+        if (dx <= ballPlayRange) { Enter(State.PlayingBall); return; }
+        if (_stateTime >= _stateLimit) DecideNext(); // 球跑太快追不上就算了
+    }
+
+    private void UpdatePlayingBall()
+    {
+        if (_ball == null) { DecideNext(); return; }
+        float dx = Mathf.Abs(_ball.transform.position.x - transform.position.x);
+        _sr.flipX = (_ball.transform.position.x > transform.position.x) != faceRightByDefault;
+
+        // 球落到头顶区间 → 顶球（向上冲量 + 挤压反馈），随后球弹走继续追
+        float headY = transform.position.y + HalfHeight * 1.6f;
+        float by = _ball.transform.position.y;
+        if (dx < ballPlayRange * 0.9f
+            && by > transform.position.y + HalfHeight * 0.6f
+            && by - headY < 0.6f)
+        {
+            float lateral = Mathf.Sign(_ball.transform.position.x - transform.position.x + 0.01f) * Random.Range(0.8f, 2.2f);
+            _ball.Bounce(new Vector2(lateral, dinoHeadBounceSpeed), byDino: true);
+            _squash = 1f;
+            _wantJump = true; // 顶球小跳
+            SpawnPuff(transform.position + Vector3.up * HalfHeight * 1.5f, new Color(1f, 0.9f, 0.5f, 0.9f), 6, 1.8f);
+            Enter(State.ChasingBall);
+            return;
+        }
+        // 球滚远了追过去；追不上超时就撤
+        if (dx > ballPlayRange * 2f) { Enter(State.ChasingBall); return; }
+        if (_stateTime >= _stateLimit) { Enter(State.ChasingBall); return; }
+    }
+
+    // —————————————— 生态事件接口（ThreatSystem / EcoEventScheduler 调用，不轮询） ——————————————
+
+    /// <summary>红色字符靠近（节流广播 0.25s 一次）</summary>
+    public void NotifyThreatNearby(Vector3 pos) { _threatPos = pos; _threatActive = true; }
+
+    /// <summary>场上已无红色威胁</summary>
+    public void NotifyThreatCleared() { _threatActive = false; }
+
+    /// <summary>被红色字符击中：受惊硬直 + 红闪 + 红屑（不致死）</summary>
+    public void NotifyThreatHit(Vector3 from)
+    {
+        _threatPos = from; _threatActive = true;
+        _tintTimer = 0f; // 避免采摘绿闪盖住受惊红闪
+        SpawnPuff(transform.position + Vector3.up * HalfHeight, new Color(1f, 0.4f, 0.35f, 0.95f), 10, 2.2f);
+        Enter(State.Scared);
+    }
+
+    /// <summary>庇护所挨了一下（耐久还剩 hpFrac）——视觉反馈</summary>
+    public void OnNestDamaged(Vector3 at, float hpFrac)
+        => SpawnPuff(at, new Color(1f, 0.45f, 0.35f, 0.9f), 6, 1.8f);
+
+    /// <summary>庇护所被红色字符破坏：字符飞散 + 受惊</summary>
+    public void NotifyNestDestroyed()
+    {
+        ScatterNest();
+        Enter(State.Scared);
+    }
+
+    /// <summary>球登场（外部注入引用；恐龙在低优先状态自行留意）</summary>
+    public void NotifyBallSpawned(BouncingBall ball) => _ball = ball;
+
+    /// <summary>庇护所完工 → 从最右侧掉落一颗长期球（玩家向左垫入房子入口）</summary>
+    private void SpawnBall()
+    {
+        var go = new GameObject("BouncingBall");
+        go.transform.position = new Vector3(
+            Mathf.Clamp(ballSpawnX, boundsXMin + 0.5f, boundsXMax - 0.5f),
+            groundY + 4f, 0f);
+        _ball = go.AddComponent<BouncingBall>();
+        _ball.Bounce(new Vector2(Random.Range(-1f, 1f), -0.5f), byDino: false);
+    }
+
+    /// <summary>球进门后重置：在最右侧重新生成一颗球</summary>
+    private void ResetBall()
+    {
+        if (_ball != null) { var old = _ball; _ball = null; Destroy(old.gameObject); }
+        SpawnBall();
+    }
+
+    /// <summary>球进入房子右侧门洞 → 触发全屏金色闪光 + 重新在最右侧生成球</summary>
+    private void CheckBallInDoor()
+    {
+        if (!_nestBuilt || _nest == null || _ball == null) return;
+        Vector3 bp = _ball.transform.position;
+        float pad = _ball.radius; // 球心允许贴到门洞边界外一个球半径
+        if (bp.x >= _doorLeftX - pad && bp.x <= _doorRightX + pad
+            && bp.y >= _doorBottomY - pad && bp.y <= _doorTopY + pad)
+        {
+            _doorFlashTimer = 1f;
+            AudioManager.PlayAt(Sfx.BallGoal, bp);
+            // 球进门瞬间爆散金色字符碎片（进球反馈）
+            _ball.Shatter();
+            ResetBall();
+        }
+    }
+
+    /// <summary>球消失：清引用；正在玩就回去干活</summary>
+    public void NotifyBallDespawned(BouncingBall ball)
+    {
+        if (_ball == ball) _ball = null;
+        if (_state == State.NoticeBall || _state == State.ChasingBall || _state == State.PlayingBall)
+            DecideNext();
+    }
+
+    /// <summary>巢被破坏：全部字符转为飞散碎片（脱离子物体后抛物线淡出）；
+    /// 球与巢生命周期共享 → 跟着炸碎。恐龙随后回到收集叶子的日常。</summary>
+    private void ScatterNest()
+    {
+        if (_nest == null) return;
+
+        // 先清引用再炸球（Shatter 会回调 NotifyBallDespawned，那时不该再触发状态决策）
+        var ball = _ball;
+        _ball = null;
+        if (ball != null) ball.Shatter();
+
+        foreach (var cell in _nestCells)
+        {
+            if (cell.T == null) continue;
+            cell.T.SetParent(null, true); // 先脱离 root，否则 Destroy(root) 会连字符一起毁
+            _nestDebris.Add(new NestDebris
+            {
+                T = cell.T, Sr = cell.Sr,
+                Vel = new Vector3(Random.Range(-3.2f, 3.2f), Random.Range(2.2f, 5.5f), 0f),
+                Spin = Random.Range(-420f, 420f), Life = 0f
+            });
+        }
+        _nestCells.Clear();
+        Destroy(_nest.gameObject);
+        _nest = null; _nestBuilt = false; _nestProgress = 0f;
+    }
+
+    /// <summary>巢碎片飞散动画（破坏后残留的字符四散）</summary>
+    private void UpdateNestDebris(float dt)
+    {
+        if (_nestDebris.Count == 0) return;
+        for (int i = _nestDebris.Count - 1; i >= 0; i--)
+        {
+            var d = _nestDebris[i];
+            d.Life += dt;
+            d.Vel.y -= 9f * dt;
+            d.Vel *= 1f - 0.6f * dt;
+            if (d.T != null)
+            {
+                d.T.position += d.Vel * dt;
+                d.T.Rotate(0f, 0f, d.Spin * dt);
+                if (d.Sr != null) { var c = d.Sr.color; c.a = Mathf.Clamp01(1.2f - d.Life * 0.8f); d.Sr.color = c; }
+            }
+            if (d.Life >= 1.5f) { if (d.T != null) Destroy(d.T.gameObject); _nestDebris.RemoveAt(i); }
+            else _nestDebris[i] = d;
         }
     }
 
@@ -477,7 +789,7 @@ public class DinoAgent : MonoBehaviour
 
         var p = transform.position;
         float prevFeetY = p.y - FeetOffset;
-        p.x = Mathf.Clamp(p.x + dirX * moveSpeed * dt, boundsXMin, boundsXMax);
+        p.x = Mathf.Clamp(p.x + dirX * moveSpeed * (_state == State.Escaping ? escapeSpeedMul : 1f) * dt, boundsXMin, boundsXMax);
         if (!_holdInAir) p.y += _vy * dt;
 
         float support = GetSupportHeight(p);
@@ -542,10 +854,18 @@ public class DinoAgent : MonoBehaviour
         sy *= 1f - _squash * 0.5f;
         sx *= 1f + _squash * 0.4f;
         float tilt = _grounded ? 0f : (_sr.flipX ? -8f : 8f); // 空中轻微前倾
+        if (_scareShake > 0f)
+        {
+            // 受惊：高频抖动 + 轻微缩膨
+            tilt += Mathf.Sin(Time.time * 55f) * 8f * _scareShake;
+            sx *= 1f + Mathf.Sin(Time.time * 40f) * 0.06f * _scareShake;
+        }
         transform.localScale = new Vector3(dinoScale * sx, dinoScale * sy, 1f);
         transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
 
-        if (_tintTimer > 0f)
+        if (_scareShake > 0f)
+            _sr.color = Color.Lerp(Color.white, new Color(1f, 0.35f, 0.3f), _scareShake); // 受惊红闪
+        else if (_tintTimer > 0f)
         {
             _tintTimer -= dt;
             _sr.color = Color.Lerp(Color.white, new Color(0.5f, 1f, 0.6f), Mathf.Clamp01(_tintTimer / 0.55f));
@@ -644,7 +964,17 @@ public class DinoAgent : MonoBehaviour
         float totalW = cols * cellW, totalH = rows * cellH;
         int cx = (cols - 1) / 2;
         int wallRows = Mathf.Max(2, rows / 3);         // 底部 1/3 是墙，其余是穹顶
-        int doorHalf = Mathf.Max(1, cols / 8);
+        // 右侧开口：宽度可调，且向上挖到房子一半高度，让恐龙能整只睡在开口下、球更容易滚进去
+        int doorCols = Mathf.Clamp(nestDoorCols, 1, cols - 1);
+        int doorTopRows = Mathf.Clamp(nestDoorRows, wallRows, rows - 1);
+        int doorLeftCol = cols - doorCols;
+
+        // 记录门洞的世界范围，供"球进门"检测与睡觉落点
+        _doorLeftX = root.transform.position.x + (doorLeftCol - cx) * cellW - cellW * 0.5f;
+        _doorRightX = root.transform.position.x + (cols - 1 - cx) * cellW + cellW * 0.5f;
+        _doorBottomY = groundY;
+        _doorTopY = groundY + doorTopRows * cellH;
+        _doorCenterX = (_doorLeftX + _doorRightX) * 0.5f;
 
         // 内部阴影：让"钻进去休息"的空间层级可读（放最里层，字符盖在上面）
         var shade = new GameObject("Shade");
@@ -660,11 +990,8 @@ public class DinoAgent : MonoBehaviour
         for (int c = 0; c < cols; c++)
         {
             bool isWall = r < wallRows;
-            if (isWall)
-            {
-                if (Mathf.Abs(c - cx) <= doorHalf) continue; // 门洞：恐龙能钻进窝里
-            }
-            else
+            if (c >= doorLeftCol && r < doorTopRows) continue; // 右侧开口：整块挖空到门顶
+            if (!isWall)
             {
                 // 穹顶：越往上越窄，形成蒙古包的圆弧轮廓
                 float t = (r - wallRows + 1f) / Mathf.Max(1f, rows - wallRows + 1f);
@@ -833,6 +1160,16 @@ public class DinoAgent : MonoBehaviour
 
     private void OnGUI()
     {
+        // 球进门全屏金色闪光（不受 debug HUD 开关影响）
+        if (_doorFlashTimer > 0f)
+        {
+            float a = Mathf.Clamp01(_doorFlashTimer);
+            var prev = GUI.color;
+            GUI.color = new Color(1f, 0.86f, 0.32f, a * 0.55f);
+            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.whiteTexture);
+            GUI.color = prev;
+        }
+
         if (!showDebugHud) return;
         GUI.Label(new Rect(10f, 10f, 560f, 22f),
             $"[Dino] state={_state}  leaves={_leafInventory}/{leavesPerNest}  " +

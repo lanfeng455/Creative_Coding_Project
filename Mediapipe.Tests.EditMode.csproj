@@ -895,11 +895,11 @@
     <Reference Include="UnityEditor.TestRunner">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\UnityEditor.TestRunner.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEditor.UI">
-      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\UnityEditor.UI.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEditor.UI">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\UnityEditor.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

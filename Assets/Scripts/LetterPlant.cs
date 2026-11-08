@@ -50,6 +50,7 @@ public class LetterPlant : MonoBehaviour
     private RawImage _img;
     private float _tickTimer;
     private bool _dirty;
+    private bool _corrupted;       // 本帧是否处于腐化区内（屏蔽生长输入）
 
     private struct Tip { public int x, y; public float drift; }
     private readonly List<Tip> _tips = new List<Tip>();
@@ -200,6 +201,23 @@ public class LetterPlant : MonoBehaviour
         _focusInput = Mathf.Clamp01(input);
     }
 
+    /// <summary>外部腐化：直接扣能量（复用现有"能量衰减→顶部凋亡"规则，不碰 CA 核心）。
+    /// 紫色字符的腐化区域每帧调用；停止扣能量后植物即可被正常浇灌恢复。</summary>
+    public void DrainEnergy(float amount)
+    {
+        if (IsFinished && freezeWhenFinished) return; // 已冻结入仓的树不受腐化
+        _energy = Mathf.Max(0f, _energy - amount);
+    }
+
+    /// <summary>世界坐标点（及其左右 ±radius 采样）是否落在本植物矩形内（腐化区域覆盖判定用）</summary>
+    public bool WorldHitsPlant(Vector3 world, float radius)
+    {
+        if (WorldToCell(world, out _, out _)) return true;
+        if (radius <= 0f) return false;
+        return WorldToCell(world + Vector3.left * radius, out _, out _)
+            || WorldToCell(world + Vector3.right * radius, out _, out _);
+    }
+
     private void Update()
     {
         // 叶片动画/布局与植物生长无关，冻结状态下也要继续跑
@@ -216,7 +234,9 @@ public class LetterPlant : MonoBehaviour
 
         // 1) 能量积分（能量只决定"允许长多高"，不直接触发结果）
         // 阈值 0.01：微小残余输入不算"有输入"，否则能量永远缓慢增长、永不退化
-        if (_focusInput > 0.01f)
+        // 腐化区内的植物：屏蔽所有能量增益，只衰减（让它快速枯死，期间长不出东西）
+        _corrupted = CorruptionZone.IsPositionCorrupted(CellToWorld(gridWidth / 2));
+        if (_focusInput > 0.01f && !_corrupted)
             _energy = Mathf.Clamp01(_energy + _focusInput * _growSpeed * Time.deltaTime);
         else
             _energy = Mathf.Clamp01(_energy - _witherSpeed * Time.deltaTime);
@@ -244,7 +264,7 @@ public class LetterPlant : MonoBehaviour
     private void Tick()
     {
         float targetH = TargetHeight;
-        bool hasInput = _focusInput >= 0.05f;
+        bool hasInput = _focusInput >= 0.05f && !_corrupted; // 腐化区内不生长
 
         // —— 播种/续长：有输入、有能量、没生长点 ——
         // 已有植株 → 从当前最高处续长；全空 → 底部发芽

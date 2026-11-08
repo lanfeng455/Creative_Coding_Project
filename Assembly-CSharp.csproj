@@ -50,17 +50,34 @@
     <Analyzer Include="C:\Unity Projects\Creative_Coding_Project\Library\PackageCache\com.unity.dt.app-ui@8ac7e730dd5d\Runtime\MVVM\SourceGenerators\netstandard2.0\MVVMSourceGenerators.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\B1\B1Items.cs" />
+    <Compile Include="Assets\Scripts\Eco\CorruptionZone.cs" />
     <Compile Include="Assets\Scripts\RightHandIndexRayProvider.cs" />
+    <Compile Include="Assets\Scripts\Eco\BouncingBall.cs" />
+    <Compile Include="Assets\Scripts\Eco\EcoEventScheduler.cs" />
+    <Compile Include="Assets\Scripts\Eco\ThreatGlyphs.cs" />
     <Compile Include="Assets\MediaPipeUnity\Tutorial\Hello World\HelloWorld.cs" />
+    <Compile Include="Assets\Scripts\B1\TypeWriterB1.cs" />
+    <Compile Include="Assets\Scripts\B1\B1LayerConfig.cs" />
     <Compile Include="Assets\Scripts\EdgeHighlightController.cs" />
+    <Compile Include="Assets\Scripts\B2\B2BackgroundRain.cs" />
+    <Compile Include="Assets\Scripts\B1\ThreatB1.cs" />
     <Compile Include="Assets\Scripts\LetterPlant.cs" />
     <Compile Include="Assets\MediaPipeUnity\Tutorial\Custom Graph\FaceMeshLegacy.cs" />
+    <Compile Include="Assets\Scripts\B1\PhysicsLetter.cs" />
+    <Compile Include="Assets\Scripts\B1\SlingshotBand.cs" />
     <Compile Include="Assets\Scripts\ScreenEdgeSegment.cs" />
+    <Compile Include="Assets\Scripts\B2\B2House.cs" />
+    <Compile Include="Assets\Scripts\Audio\AudioManager.cs" />
     <Compile Include="Assets\Scripts\LetterAlphabetBar.cs" />
     <Compile Include="Assets\MediaPipeUnity\Tutorial\Tasks\FaceLandmarkerRunner.cs" />
     <Compile Include="Assets\Scripts\GlyphRain.cs" />
+    <Compile Include="Assets\Scripts\B2\B2Table.cs" />
+    <Compile Include="Assets\Scripts\B1\B1EventScheduler.cs" />
     <Compile Include="Assets\Scripts\EdgeHitGlow.cs" />
     <Compile Include="Assets\Scripts\Dino\DinoAgent.cs" />
+    <Compile Include="Assets\Scripts\B1\DinoAgentB1.cs" />
+    <Compile Include="Assets\Scripts\B1\B1Text.cs" />
     <Compile Include="Assets\Scripts\Dino\WateringCan.cs" />
     <None Include="Packages\com.github.homuler.mediapipe\PackageResources\Shaders\OverlayMask.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
@@ -900,6 +917,9 @@
     <Reference Include="System.Xml.Serialization">
       <HintPath>C:\UnityVersion\6000.3.12f1\Editor\Data\NetStandard\compat\2.1.0\shims\netfx\System.Xml.Serialization.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.RenderPipelines.Core.Editor">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.Core.Editor.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.InferenceEngine.ONNX.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.InferenceEngine.ONNX.Editor.dll</HintPath>
     </Reference>
@@ -915,8 +935,14 @@
     <Reference Include="Unity.TextMeshPro">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.Rendering.LightTransport.Editor">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.Rendering.LightTransport.Editor.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.AI.Navigation">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.AI.Navigation.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Core.ShaderLibrary">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.Core.ShaderLibrary.dll</HintPath>
     </Reference>
     <Reference Include="Unity.AI.Assistant.Agent.Dynamic.Extension.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.AI.Assistant.Agent.Dynamic.Extension.Editor.dll</HintPath>
@@ -930,11 +956,11 @@
     <Reference Include="Unity.Recorder.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.Recorder.Editor.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.MemoryProfiler.Editor">
-      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.MemoryProfiler.Editor.dll</HintPath>
+    <Reference Include="Unity.RenderPipelines.Universal.2D.Editor.Overrides">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.Universal.2D.Editor.Overrides.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.TestTools.CodeCoverage.Editor.OpenCover.Model">
-      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.TestTools.CodeCoverage.Editor.OpenCover.Model.dll</HintPath>
+    <Reference Include="Unity.RenderPipelines.Universal.Editor">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.Universal.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.AI.Navigation.Updater">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.AI.Navigation.Updater.dll</HintPath>
@@ -942,8 +968,14 @@
     <Reference Include="Unity.Timeline">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.Timeline.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.TestTools.CodeCoverage.Editor.OpenCover.Model">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.TestTools.CodeCoverage.Editor.OpenCover.Model.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.AI.Navigation.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.AI.Navigation.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="PPv2URPConverters">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\PPv2URPConverters.dll</HintPath>
     </Reference>
     <Reference Include="Unity.EditorCoroutines.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.EditorCoroutines.Editor.dll</HintPath>
@@ -954,8 +986,20 @@
     <Reference Include="Unity.AI.Assistant.Integrations.Profiler.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.AI.Assistant.Integrations.Profiler.Editor.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.RenderPipelines.Core.Runtime.Shared">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.Core.Runtime.Shared.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.MemoryProfiler.Editor">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.MemoryProfiler.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Universal.2D.Runtime">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.Universal.2D.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.AI.Assistant.Tools.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.AI.Assistant.Tools.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Searcher.Editor">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.Searcher.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.PlasticSCM.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.PlasticSCM.Editor.dll</HintPath>
@@ -978,6 +1022,9 @@
     <Reference Include="Unity.AI.MCP.Runtime">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.AI.MCP.Runtime.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.UnifiedRayTracing.Runtime">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.UnifiedRayTracing.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.InferenceEngine.MacBLAS">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.InferenceEngine.MacBLAS.dll</HintPath>
     </Reference>
@@ -996,6 +1043,9 @@
     <Reference Include="Unity.InferenceEngine.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.InferenceEngine.Editor.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.RenderPipelines.Core.Runtime">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.Core.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.AI.Assistant.Annotations.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.AI.Assistant.Annotations.Editor.dll</HintPath>
     </Reference>
@@ -1007,6 +1057,9 @@
     </Reference>
     <Reference Include="Unity.AI.Assistant.Runtime">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.AI.Assistant.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.dll</HintPath>
     </Reference>
     <Reference Include="Unity.VisualStudio.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.VisualStudio.Editor.dll</HintPath>
@@ -1023,6 +1076,9 @@
     <Reference Include="Unity.Profiling.Core">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.Profiling.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.RenderPipelines.GPUDriven.Runtime">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.GPUDriven.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.Timeline.Editor.dll</HintPath>
     </Reference>
@@ -1031,6 +1087,9 @@
     </Reference>
     <Reference Include="Unity.Mathematics">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.Mathematics.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Universal.Shaders">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.Universal.Shaders.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Multiplayer.Center.Common">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.Multiplayer.Center.Common.dll</HintPath>
@@ -1053,8 +1112,14 @@
     <Reference Include="Unity.InferenceEngine.Tokenization">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.InferenceEngine.Tokenization.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.RenderPipelines.Universal.Runtime">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.MemoryProfiler.Editor.MemoryProfilerModule">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.MemoryProfiler.Editor.MemoryProfilerModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Universal.Config.Runtime">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.Universal.Config.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Unity.AppUI">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.AppUI.dll</HintPath>
@@ -1064,6 +1129,15 @@
     </Reference>
     <Reference Include="Unity.Collections.Editor">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.Collections.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.ShaderGraph.Editor">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.ShaderGraph.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.RenderPipeline.Universal.ShaderLibrary">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipeline.Universal.ShaderLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Core.Editor.Shared">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.RenderPipelines.Core.Editor.Shared.dll</HintPath>
     </Reference>
     <Reference Include="Unity.InferenceEngine.iOSBLAS">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\Unity.InferenceEngine.iOSBLAS.dll</HintPath>

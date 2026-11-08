@@ -78,7 +78,15 @@ public class RightHandIndexRayProvider : MonoBehaviour
     /// <summary>右侧食指尖（屏幕坐标，y 向上）</summary>
     public Vector2 TipScreenB { get; private set; }
 
+    /// <summary>左侧食指第二关节 PIP（屏幕坐标）——B1 弹力带用：PIP→TIP 是手指板面</summary>
+    public Vector2 PipScreenA { get; private set; }
+    /// <summary>右侧食指第二关节 PIP（屏幕坐标）</summary>
+    public Vector2 PipScreenB { get; private set; }
+    /// <summary>单手时的 PIP（屏幕坐标）</summary>
+    public Vector2 PipScreenSingle { get; private set; }
+
     private Vector2 _tipSmA, _tipSmB, _tipSmS;
+    private Vector2 _pipSmA, _pipSmB, _pipSmS;
     private bool _tipSmInit, _tipSmSInit;
 
     // 食指 landmark 索引
@@ -532,28 +540,39 @@ public class RightHandIndexRayProvider : MonoBehaviour
     private int _lastHandednessDump = -1;
     private int _lastHandednessFallback = -1;
 
-    /// <summary>提取两只手的食指尖（landmark 8），按屏幕 x 排序后 EMA 平滑，写入 TipScreenA/B</summary>
+    /// <summary>提取两只手的食指尖（landmark 8），按屏幕 x 排序后 EMA 平滑，写入 TipScreenA/B。
+    /// 同时成对提取 PIP（landmark 6，跟随同一只手），写入 PipScreenA/B（B1 弹力带用）。
+    /// PIP 读取失败只影响 PIP 输出（保留旧值），不影响指尖判定。</summary>
     private void UpdateTwoTips(System.Collections.IList landmarksList)
     {
         if (landmarksList.Count >= 2
             && TryGetTipScreen(landmarksList, 0, out Vector2 t0)
             && TryGetTipScreen(landmarksList, 1, out Vector2 t1))
         {
-            // 手序帧间可能交换 → 按 x 排序，A 左 B 右
-            Vector2 a = t0.x <= t1.x ? t0 : t1;
-            Vector2 b = t0.x <= t1.x ? t1 : t0;
+            // 手序帧间可能交换 → 按 x 排序，A 左 B 右；PIP 与指尖取自同一只手再排序
+            TryGetLandmarkScreen(landmarksList, 0, IndexPip, out Vector2 p0raw);
+            TryGetLandmarkScreen(landmarksList, 1, IndexPip, out Vector2 p1raw);
+            Vector2 a, b, pa, pb;
+            if (t0.x <= t1.x) { a = t0; b = t1; pa = p0raw; pb = p1raw; }
+            else              { a = t1; b = t0; pa = p1raw; pb = p0raw; }
 
             if (!_tipSmInit)
             {
-                _tipSmA = a; _tipSmB = b; _tipSmInit = true;
+                _tipSmA = a; _tipSmB = b;
+                _pipSmA = pa; _pipSmB = pb;   // 首帧 PIP 无效时暂用指尖，后续帧会收敛
+                _tipSmInit = true;
             }
             else
             {
                 _tipSmA = Vector2.Lerp(_tipSmA, a, smoothingAlpha);
                 _tipSmB = Vector2.Lerp(_tipSmB, b, smoothingAlpha);
+                _pipSmA = Vector2.Lerp(_pipSmA, pa, smoothingAlpha);
+                _pipSmB = Vector2.Lerp(_pipSmB, pb, smoothingAlpha);
             }
             TipScreenA = _tipSmA;
             TipScreenB = _tipSmB;
+            PipScreenA = _pipSmA;
+            PipScreenB = _pipSmB;
             HasTwoTips = true;
             HasOneTip = false;
         }
@@ -562,7 +581,14 @@ public class RightHandIndexRayProvider : MonoBehaviour
             // 单手：暴露单指尖，屋檐退化为"指尖到最近屏幕边缘"的缝隙
             if (!_tipSmSInit) { _tipSmS = ts; _tipSmSInit = true; }
             else _tipSmS = Vector2.Lerp(_tipSmS, ts, smoothingAlpha);
+            if (TryGetLandmarkScreen(landmarksList, 0, IndexPip, out Vector2 ps))
+            {
+                if (!_tipSmSInit) _pipSmS = ps;
+                else _pipSmS = Vector2.Lerp(_pipSmS, ps, smoothingAlpha);
+            }
+            else if (!_tipSmSInit) _pipSmS = ts;
             TipScreenSingle = _tipSmS;
+            PipScreenSingle = _pipSmS;
             HasTwoTips = false;
             HasOneTip = true;
             _tipSmInit = false;
@@ -574,6 +600,34 @@ public class RightHandIndexRayProvider : MonoBehaviour
             _tipSmInit = false;
             _tipSmSInit = false;
             // 注意：TipScreenA/B/Single 保留最后值（屋檐位置不塌），由 GlyphRain 决定怎么处理
+        }
+    }
+
+    /// <summary>从 landmarksList[handIndex] 取任意 landmark（屏幕坐标，含镜像）。失败返回 false（screenPos=default）</summary>
+    private bool TryGetLandmarkScreen(System.Collections.IList landmarksList, int handIndex, int landmarkIndex, out Vector2 screenPos)
+    {
+        screenPos = default;
+        try
+        {
+            var nls = landmarksList[handIndex];
+            var f = nls.GetType().GetField("landmarks", BindingFlags.Instance | BindingFlags.Public);
+            if (f == null) return false;
+            if (f.GetValue(nls) is not System.Collections.IList ll || ll.Count <= landmarkIndex) return false;
+            var lm = ll[landmarkIndex];
+            var t = lm.GetType();
+            var xf = t.GetField("x", BindingFlags.Instance | BindingFlags.Public);
+            var yf = t.GetField("y", BindingFlags.Instance | BindingFlags.Public);
+            if (xf == null || yf == null) return false;
+
+            float nx = (float)xf.GetValue(lm);
+            float ny = (float)yf.GetValue(lm);
+            if (isMirrored) nx = 1f - nx;
+            screenPos = new Vector2(nx * Screen.width, (1f - ny) * Screen.height);
+            return true;
+        }
+        catch (System.ArgumentOutOfRangeException)
+        {
+            return false; // SDK 缓冲竞争，跳过本帧
         }
     }
 

@@ -63,7 +63,13 @@ public class LetterAlphabetBar : MonoBehaviour
     public float typewriterLeftInset = 64f;
     [Tooltip("打字块距屏幕顶部的距离（像素）。参考图里打字块在上半屏偏下位置，留足上方呼吸空间")]
     public float typewriterTopInset = 260f;
-    [Tooltip("打字机重排平滑速度（越大越快）")]
+    [Header("UI 模板（可选，推荐）：把你调好的 TMP 物体拖进来，运行时按模板克隆")]
+    [Tooltip("字母格 TMP 模板（字体/字号/颜色/描边/发光全部沿用模板设置）。留空则用下方代码默认参数")]
+    public TextMeshProUGUI labelTemplate;
+    [Tooltip("打字机字母 TMP 模板。留空则用代码默认参数")]
+    public TextMeshProUGUI typedTemplate;
+
+    [Header("打字机重排平滑速度（越大越快）")]
     public float typewriterReflowSpeed = 16f;
 
     [Header("斜分割线（打字机区与威胁区的边界，角度可调）")]
@@ -141,6 +147,7 @@ public class LetterAlphabetBar : MonoBehaviour
         public RectTransform rect;
         public Vector2 target;
         public float alpha;
+        public Color baseColor;   // 模板颜色（淡入时只改 alpha，不覆盖用户设置的颜色）
     }
     private readonly List<TypedEntry> _typed = new List<TypedEntry>();
 
@@ -377,6 +384,10 @@ public class LetterAlphabetBar : MonoBehaviour
 
     private TextMeshProUGUI CreateLabel(Transform parent, string name, int fontSize, Color color)
     {
+        // 有模板 → 直接克隆模板 GameObject，完整保留用户调好的 TMP 参数（字体/字号/描边/发光/间距…）
+        if (labelTemplate != null)
+            return CloneTemplate(labelTemplate, parent, name);
+
         var go = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
         go.transform.SetParent(parent, false);
         go.layer = gameObject.layer;
@@ -391,6 +402,27 @@ public class LetterAlphabetBar : MonoBehaviour
         tmp.color = color;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.raycastTarget = false;
+        return tmp;
+    }
+
+    /// <summary>克隆模板 TMP（模板本身可保持 inactive，运行时克隆出来再激活）</summary>
+    private TextMeshProUGUI CloneTemplate(TextMeshProUGUI template, Transform parent, string name)
+    {
+        var go = Instantiate(template.gameObject, parent, false);
+        go.name = name;
+        go.SetActive(true);
+        go.layer = gameObject.layer;
+        var tmp = go.GetComponent<TextMeshProUGUI>();
+        tmp.raycastTarget = false;
+        return tmp;
+    }
+
+    /// <summary>打字机字母：优先用 typedTemplate</summary>
+    private TextMeshProUGUI CreateTypedLabel(string name, int fontSize, Color color)
+    {
+        if (typedTemplate != null) return CloneTemplate(typedTemplate, transform, name);
+        var tmp = CreateLabel(transform, name, fontSize, color);
+        if (_typedMaterial != null) tmp.fontSharedMaterial = _typedMaterial;
         return tmp;
     }
 
@@ -441,8 +473,10 @@ public class LetterAlphabetBar : MonoBehaviour
     /// <summary>打字机光标：显示在下一个待键入位置</summary>
     private void BuildCaret()
     {
-        _caret = CreateLabel(transform, "TypewriterCaret", Mathf.RoundToInt(typewriterFontSize), typewriterCaretColor);
-        if (_typedMaterial != null) _caret.fontSharedMaterial = _typedMaterial;
+        _caret = typedTemplate != null
+            ? CloneTemplate(typedTemplate, transform, "TypewriterCaret")
+            : CreateLabel(transform, "TypewriterCaret", Mathf.RoundToInt(typewriterFontSize), typewriterCaretColor);
+        if (typedTemplate == null && _typedMaterial != null) _caret.fontSharedMaterial = _typedMaterial;
         _caret.text = "_";
         var rt = _caret.rectTransform;
         rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
@@ -453,17 +487,18 @@ public class LetterAlphabetBar : MonoBehaviour
     private void SpawnTypeLetter(int letterIndex)
     {
         char c = letters[letterIndex];
-        var tmp = CreateLabel(transform, $"Typed_{c}", Mathf.RoundToInt(_typedFontSize), typewriterColor);
-        if (_typedMaterial != null) tmp.fontSharedMaterial = _typedMaterial;
+        var tmp = CreateTypedLabel($"Typed_{c}", Mathf.RoundToInt(_typedFontSize), typewriterColor);
         tmp.text = c.ToString();
-        tmp.color = new Color(typewriterColor.r, typewriterColor.g, typewriterColor.b, 0f);
+        // 用模板时保留模板颜色，只把 alpha 归零（淡入动画在后面逐帧拉起来）
+        Color baseColor = typedTemplate != null ? tmp.color : typewriterColor;
+        tmp.color = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
 
         var rt = tmp.rectTransform;
         rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
         rt.pivot = new Vector2(0.5f, 0.5f);
         rt.sizeDelta = new Vector2(_typedCellWidth, _typedCellHeight);
 
-        var entry = new TypedEntry { rect = rt, alpha = 0f };
+        var entry = new TypedEntry { rect = rt, alpha = 0f, baseColor = baseColor };
         _typed.Add(entry);
         EnsureTypewriterCapacity();
         ApplyTypewriterLayout();
@@ -633,7 +668,7 @@ public class LetterAlphabetBar : MonoBehaviour
                 var tmp = e.rect.GetComponent<TextMeshProUGUI>();
                 if (tmp != null)
                 {
-                    Color c = typewriterColor;
+                    Color c = (e.baseColor.a > 0f) ? e.baseColor : typewriterColor;
                     c.a *= e.alpha;
                     tmp.color = c;
                 }

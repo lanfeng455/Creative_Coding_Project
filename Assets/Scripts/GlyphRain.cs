@@ -211,6 +211,9 @@ public class GlyphRain : MonoBehaviour
 
     private void Update()
     {
+        // 通知腐化区当前是否有雨（腐化区据此累计净化时长）
+        CorruptionZone.RainFalling = rainEnabled;
+
         if (!rainEnabled)
         {
             // 停用时清空所有雨滴和水花
@@ -240,7 +243,7 @@ public class GlyphRain : MonoBehaviour
 
         // —— 下落 + 遮挡 + 落地 ——
         var r = _rect.rect;
-        float floorY = r.yMin + bar.LetterRowDisplayHeight;  // 实际显示的字母行顶
+        float floorY = bar != null ? r.yMin + bar.LetterRowDisplayHeight : r.yMin;  // bar 为空时直接落到底边
         float dt = Time.deltaTime;
 
         foreach (var d in _pool)
@@ -274,11 +277,19 @@ public class GlyphRain : MonoBehaviour
                 }
             }
 
-            // 落地 → 浇灌
+            // 落地 → 净化腐化区域（优先）或浇灌
             if (d.y <= floorY)
             {
-                if (bar != null) bar.WaterAtLocalX(d.x, waterPerDrop, splashSigmaPx);
-                SpawnSplash(d.x, floorY, landSplashColor, 160f); // 落地 → 绿花向上弹
+                if (CorruptionZone.PurifyAt(RainLocalToWorld(new Vector2(d.x, floorY)), waterPerDrop))
+                {
+                    // 这滴雨被腐化区域吸收用于净化：不浇灌，紫色水花直观反馈净化进度
+                    SpawnSplash(d.x, floorY, new Color(0.78f, 0.55f, 1f, 0.9f), 160f);
+                }
+                else
+                {
+                    if (bar != null) bar.WaterAtLocalX(d.x, waterPerDrop, splashSigmaPx);
+                    SpawnSplash(d.x, floorY, landSplashColor, 160f); // 落地 → 绿花向上弹
+                }
                 Kill(d);
                 continue;
             }
@@ -428,6 +439,48 @@ public class GlyphRain : MonoBehaviour
         return _roofValid
             && !IsRoofAboveRain(_roofLeftLocal.y)
             && !IsRoofAboveRain(_roofRightLocal.y);
+    }
+
+    /// <summary>世界坐标 → bar 局部坐标（主相机世界系 ↔ UI 系换算，供威胁字符等外部系统复用）</summary>
+    public Vector2 WorldToRainLocal(Vector3 world)
+    {
+        Camera uiCam = (_canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? _canvas.worldCamera : null;
+        Camera main = Camera.main;
+        if (main == null) return Vector2.zero;
+        Vector2 screen = main.WorldToScreenPoint(world);
+        return RectTransformUtility.ScreenPointToLocalPointInRectangle(_rect, screen, uiCam, out Vector2 local)
+            ? local : Vector2.zero;
+    }
+
+    /// <summary>bar 局部坐标 → 主相机世界坐标（与 LetterPlant.CellToWorld 同一换算）</summary>
+    public Vector3 RainLocalToWorld(Vector2 local)
+    {
+        Camera main = Camera.main;
+        if (main == null) return Vector3.zero;
+        Vector3 canvasWorld = _rect.TransformPoint(local);
+        Camera uiCam = (_canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? _canvas.worldCamera : null;
+        Vector2 screen = RectTransformUtility.WorldToScreenPoint(uiCam, canvasWorld);
+        return main.ScreenToWorldPoint(new Vector3(screen.x, screen.y, -main.transform.position.z));
+    }
+
+    /// <summary>雨区（= bar 区域）在世界坐标下的下边沿 y：威胁字符/球的"地面"语义与乱码雨一致</summary>
+    public float RainWorldYMin => RainLocalToWorld(new Vector2(0f, _rect.rect.yMin)).y;
+
+    /// <summary>雨区（= bar 区域）在世界坐标下的上边沿 y：威胁字符/球从这里出现，不从屏幕最顶掉下来</summary>
+    public float RainWorldYMax => RainLocalToWorld(new Vector2(0f, _rect.rect.yMax)).y;
+
+    /// <summary>世界坐标处的物体是否"撞上"指尖屋檐（红色/紫色威胁字符复用同一屏障判定）。
+    /// 判定：x 不在缝隙内、且到屋檐线的竖直距离在 hitBandPx 内（穿越检测，避免贴地目标被永远遮挡）</summary>
+    public bool RoofBlocksWorld(Vector3 world, float hitBandPx = 30f)
+    {
+        if (!_roofValid) return false;
+        Vector2 local = WorldToRainLocal(world);
+        float roofY = float.MinValue;
+        if (local.x < _roofLeftLocal.x) roofY = _roofLeftLocal.y;
+        else if (local.x > _roofRightLocal.x) roofY = _roofRightLocal.y;
+        if (roofY == float.MinValue) return false;                       // 缝隙内永不遮挡
+        if (IsRoofAboveRain(roofY)) return false;                        // 该侧举到雨区上方=橡皮擦
+        return Mathf.Abs(local.y - roofY) <= hitBandPx;                  // 正在穿越屋檐线
     }
 
     /// <summary>每帧把屋檐线/指尖点摆到当前屋檐位置</summary>

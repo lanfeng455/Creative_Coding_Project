@@ -17,3 +17,4 @@ Logs/AssetImportWorker1.log
 /obj
 /obj
 /obj/Debug
+*.log

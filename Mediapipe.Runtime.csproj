@@ -74,8 +74,8 @@
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Unity\Annotation\PoseWorldLandmarkListAnnotationController.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Util\MotionEstimation.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Framework\PacketGetterExtension.cs" />
-    <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Calculators\Core\ConstantSidePacketCalculator.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Util\Color.cs" />
+    <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Calculators\Core\ConstantSidePacketCalculator.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Tasks\Vision\Core\RunningMode.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Unity\Annotation\DetectionResultAnnotationController.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\PInvoke\NativeMethods\Gpu\GpuResources_Unsafe.cs" />
@@ -272,8 +272,8 @@
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Framework\CalculatorGraphConfigExtension.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Unity\Annotation\NormalizedRectAnnotationController.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Tasks\Vision\FaceGeometry\Proto\FaceGeometryGraphOptions.cs" />
-    <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Calculators\Util\TopKScoresCalculator.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Tasks\Vision\FaceLandmarker\FaceLandmarker.cs" />
+    <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Calculators\Util\TopKScoresCalculator.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Modules\HolisticLandmark\Calculators\RoiTrackingCalculator.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Tasks\Audio\AudioClassifier\AudioClassifier.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Calculators\Tflite\TfliteConverterCalculator.cs" />
@@ -297,8 +297,8 @@
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Unity\Annotation\MultiHandLandmarkListAnnotationController.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Tasks\Components\Containers\DetectionResult.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Framework\Calculator.cs" />
-    <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Tasks\Core\TaskRunner.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Calculators\Image\SetAlphaCalculator.cs" />
+    <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Tasks\Core\TaskRunner.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Calculators\Util\RectToRenderDataCalculator.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Unity\Annotation\PointListAnnotation.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Calculators\Tensor\InferenceCalculator.cs" />
@@ -373,8 +373,8 @@
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\PInvoke\MpReturnCode.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Unity\Annotation\PoseLandmarkListWithMaskAnnotation.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Calculators\Tflite\TfliteCustomOpResolverCalculator.cs" />
-    <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Core\UniquePtrHandle.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Unity\ResourceManager.cs" />
+    <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Core\UniquePtrHandle.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Protobuf\Tasks\Vision\ObjectDetector\Proto\ObjectDetectorOptions.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Unity\CoordinateSystem\RealWorldCoordinate.cs" />
     <Compile Include="Packages\com.github.homuler.mediapipe\Runtime\Scripts\Extension\ImageFormatExtension.cs" />
@@ -1218,11 +1218,11 @@
     <Reference Include="System.Xml.Serialization">
       <HintPath>C:\UnityVersion\6000.3.12f1\Editor\Data\NetStandard\compat\2.1.0\shims\netfx\System.Xml.Serialization.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEditor.UI">
-      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\UnityEditor.UI.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEditor.UI">
+      <HintPath>C:\Unity Projects\Creative_Coding_Project\Library\ScriptAssemblies\UnityEditor.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
