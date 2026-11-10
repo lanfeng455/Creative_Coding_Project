@@ -38,6 +38,9 @@ public class B1LayerConfig : MonoBehaviour
 
     public event Action<Vector3, float> LetterRecorded;
     public event Action<Transform, float, float, string> RoomBuilt;
+    internal event Func<bool> WaterCrafted;
+
+    internal bool TryHandleCraftedWater() => WaterCrafted?.Invoke() ?? false;
 
     internal bool NotifyLetterRecorded(Vector3 position, float size)
     {

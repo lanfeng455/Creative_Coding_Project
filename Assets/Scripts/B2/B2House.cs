@@ -1,12 +1,7 @@
-// B2House.cs —— 恐龙之家：PCG 火柴盒房间（泰拉瑞亚式堆叠）
-// 恐龙每交一份建材（WOOD/STONE）→ AddRoom 盖一间火柴盒：
-//   · 字符画墙体（+ - | 角/横/竖），材质定色（木棕/石灰），底排房间带门洞
-//   · 新房间随机接在现有房间的左/右/上方（横向 60% / 向上 40%），上层房间下方必须有支撑
-// 红色威胁字符可以命中并摧毁一个房间（RemoveRoom）。
+// 恐龙之家：B2 用四根圆木搭建，旧玩法仍可用 AddRoom 生成字符画房间。
 
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
 
 [DisallowMultipleComponent]
 public class B2House : MonoBehaviour
@@ -37,6 +32,9 @@ public class B2House : MonoBehaviour
     private B1LayerConfig _world;
     private Vector3 _origin; // 首间房中心
     private bool _inited;
+    internal const int WoodStepsRequired = 4;
+    public int WoodStepsBuilt { get; private set; }
+    private Room _woodHouse;
 
     public IReadOnlyList<Room> Rooms => _rooms;
     public bool CanGrow => _inited && _rooms.Count < maxRooms;
@@ -87,12 +85,58 @@ public class B2House : MonoBehaviour
             center = CellCenter(cell),
         };
         room.root = BuildRoomVisual(room);
-        _rooms.Add(room);
-        _occupied.Add(cell);
-
-        if (!_world.NotifyRoomBuilt(room.root.transform, roomW, roomH, material))
-            B1Burst.Shatter(room.center, room.color, 10, 4.5f);
+        CompleteRoom(room);
         return room;
+    }
+
+    internal void AddWoodStep(Sprite logSprite)
+    {
+        if (!_inited || WoodStepsBuilt >= WoodStepsRequired) return;
+        if (WoodStepsBuilt == 0)
+        {
+            Vector3 center = new Vector3(_origin.x, _world.upperFloorY + roomH * 0.5f);
+            _woodHouse = new Room { material = "WOOD", color = woodColor, center = center };
+            _woodHouse.root = CreateRoomRoot(_woodHouse);
+        }
+
+        PlaceWoodBeam(logSprite);
+        WoodStepsBuilt++;
+        if (WoodStepsBuilt == WoodStepsRequired) CompleteRoom(_woodHouse);
+    }
+
+    private void PlaceWoodBeam(Sprite sprite)
+    {
+        const float thickness = 0.32f;
+        float postX = roomW * 0.5f - thickness * 0.85f;
+        float capY = (roomH - thickness) * 0.5f;
+        var (name, center, upright) = WoodStepsBuilt switch
+        {
+            0 => ("Wood Floor", new Vector2(0f, -capY), false),
+            1 => ("Wood Left Post", new Vector2(-postX, 0f), true),
+            2 => ("Wood Right Post", new Vector2(postX, 0f), true),
+            _ => ("Wood Roof", new Vector2(0f, capY), false),
+        };
+
+        var beam = new GameObject(name).AddComponent<SpriteRenderer>();
+        beam.sprite = sprite;
+        beam.sortingOrder = upright ? 0 : 1;
+        beam.transform.SetParent(_woodHouse.root.transform, false);
+        var rotation = Quaternion.Euler(0f, 0f, upright ? 90f : 0f);
+        beam.transform.localRotation = rotation;
+        // Mini Meadow's log uses the bottom seven pixel rows and a bottom pivot.
+        float length = upright ? roomH - thickness : roomW;
+        beam.transform.localScale = new Vector3(length * sprite.pixelsPerUnit / sprite.rect.width,
+            thickness * sprite.pixelsPerUnit / 7f, 1f);
+        beam.transform.localPosition = (Vector3)center - rotation * (Vector3.up * (thickness * 0.5f));
+    }
+
+    private void CompleteRoom(Room room)
+    {
+        _rooms.Add(room);
+        _occupied.Add(new Vector2Int(room.col, room.row));
+
+        if (!_world.NotifyRoomBuilt(room.root.transform, roomW, roomH, room.material))
+            B1Burst.Shatter(room.center, room.color, 10, 4.5f);
     }
 
     private void TryAdd(Vector2Int c, List<Vector2Int> side, List<Vector2Int> up, bool isUp)
@@ -124,23 +168,33 @@ public class B2House : MonoBehaviour
         if (room.root != null) Destroy(room.root);
         _rooms.Remove(room);
         _occupied.Remove(new Vector2Int(room.col, room.row));
+        if (room == _woodHouse)
+        {
+            _woodHouse = null;
+            WoodStepsBuilt = 0;
+        }
     }
 
     // —— 字符画房间 ——
 
     private const int Cols = 6, Rows = 4;
 
-    private GameObject BuildRoomVisual(Room room)
+    private GameObject CreateRoomRoot(Room room)
     {
         var root = new GameObject($"Room_{room.col}_{room.row}_{room.material}");
         root.transform.SetParent(transform, false);
         root.transform.position = room.center;
+        return root;
+    }
 
+    private GameObject BuildRoomVisual(Room room)
+    {
+        var root = CreateRoomRoot(room);
         float cw = roomW / Cols;   // 字符单元宽
         float ch = roomH / Rows;   // 字符单元高
         // TMP 字号 ≈ 单元格尺寸 ×10（字号10 ≈ 1 世界单位高），墙字随房间缩放
         float fontSz = Mathf.Min(cw, ch) * 10f;
-        int doorCol = Random.Range(1, Cols - 2); // 门洞位置（仅底排房间）
+        int doorCol = Random.Range(1, Cols - 2);
 
         for (int r = 0; r < Rows; r++)
         for (int c = 0; c < Cols; c++)
@@ -160,12 +214,11 @@ public class B2House : MonoBehaviour
 
             if (glyph == null) continue;
 
-            var tm = B1Text.Make($"wall_{r}_{c}", root.transform, fontSz, room.color, 1);
-            tm.text = glyph.ToString();
-            tm.transform.localPosition = new Vector3(
+            var text = B1Text.Make($"wall_{r}_{c}", root.transform, fontSz, room.color, 1);
+            text.text = glyph.Value.ToString();
+            text.transform.localPosition = new Vector3(
                 (c - (Cols - 1) * 0.5f) * cw,
-                (r - (Rows - 1) * 0.5f) * ch,
-                0f);
+                (r - (Rows - 1) * 0.5f) * ch);
         }
         return root;
     }

@@ -15,7 +15,7 @@ public sealed class B2FireWaterEncounter : MonoBehaviour
     private B2FireWaterEffects _effects;
     private FireHazard _fire;
     private SpriteRenderer _flames;
-    private B2FireWaterItem _delivery;
+    private B2FireWaterItem _spit;
     private Vector3 _foot;
     private bool _aiming;
     private float _anticipation;
@@ -64,6 +64,7 @@ public sealed class B2FireWaterEncounter : MonoBehaviour
         _mouth.SetParent(dino.transform, false);
         // The original 18 x 20 sprite uses 32 pixels per unit and a bottom-center pivot.
         _mouth.localPosition = new Vector3(8.5f / 32f, 16.5f / 32f);
+        _world.WaterCrafted += TrySpitWater;
     }
 
     private void Update()
@@ -106,21 +107,6 @@ public sealed class B2FireWaterEncounter : MonoBehaviour
 
     private void LateUpdate()
     {
-        // Swap the runtime driver after the typewriter creates water. Keep the
-        // item's original position and velocity, including the scene's spawn height.
-        var items = B1Item.All;
-        for (int i = items.Count - 1; i >= 0; i--)
-        {
-            if (items[i] is not B1Water water || water == null || water is B2FireWaterItem ||
-                !water.Alive || !water.enabled || water.gameObject.scene != gameObject.scene)
-                continue;
-
-            water.enabled = false;
-            var replacement = water.gameObject.AddComponent<B2FireWaterItem>();
-            replacement.Bind(this, water);
-            Destroy(water);
-        }
-
         if (_dino != null && _fire != null && (_aiming || Time.time < _recoilUntil))
         {
             var dinoTransform = _dino.transform;
@@ -136,34 +122,34 @@ public sealed class B2FireWaterEncounter : MonoBehaviour
         if (_releaseAtMouth)
         {
             _releaseAtMouth = false;
-            if (CanContinue(_delivery, _fire))
+            if (CanContinue(_spit, _fire))
             {
                 _releaseOrigin = _mouth.position;
-                _delivery.ShowSpitAt(_releaseOrigin);
+                _spit.ShowSpitAt(_releaseOrigin);
             }
         }
     }
 
-    internal bool TryReceive(B2FireWaterItem water)
+    private bool TrySpitWater()
     {
-        if (_fire == null || _flames == null || _delivery != null || _mouth == null) return false;
-        _delivery = water;
-        StartCoroutine(Deliver(water, _fire));
+        var fire = FireHazard.ActiveFire;
+        if (!isActiveAndEnabled || _mouth == null || fire == null || fire.gameObject.scene != gameObject.scene)
+            return false;
+        if (_spit != null) return true;
+
+        var shot = new GameObject("B2 Water Spit", typeof(SpriteRenderer));
+        shot.transform.SetParent(transform);
+        shot.transform.position = _mouth.position;
+        _spit = shot.AddComponent<B2FireWaterItem>();
+        StartCoroutine(SpitWater(_spit, fire));
         return true;
     }
 
-    private IEnumerator Deliver(B2FireWaterItem water, FireHazard fire)
+    private IEnumerator SpitWater(B2FireWaterItem water, FireHazard fire)
     {
-        water.BeginDelivery();
-        while (CanContinue(water, fire))
-        {
-            var mouth = _mouth.position;
-            water.transform.position = Vector3.MoveTowards(water.transform.position, mouth, Time.deltaTime * 12f);
-            if ((water.transform.position - mouth).sqrMagnitude < 0.06f * 0.06f) break;
+        while (CanContinue(water, fire) && _flames == null)
             yield return null;
-        }
 
-        if (CanContinue(water, fire)) water.HideForWindup();
         _aiming = true;
         const float windup = 0.12f;
         for (float t = 0f; t < windup && CanContinue(water, fire); t += Time.deltaTime)
@@ -211,7 +197,7 @@ public sealed class B2FireWaterEncounter : MonoBehaviour
         }
 
         if (water != null) water.Consume();
-        _delivery = null;
+        _spit = null;
     }
 
     private bool CanContinue(B2FireWaterItem water, FireHazard fire)
@@ -227,6 +213,7 @@ public sealed class B2FireWaterEncounter : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (_world != null) _world.WaterCrafted -= TrySpitWater;
         if (_mouth != null) Destroy(_mouth.gameObject);
         _effects?.Release();
     }
@@ -259,12 +246,7 @@ public sealed class B2FireWaterEncounter : MonoBehaviour
         yield return new WaitForSeconds(0.35f);
         if (fire == null) yield break;
 
-        var water = new GameObject("B1_WATER (VFX Preview)", typeof(SpriteRenderer), typeof(B1Water));
-        float dinoX = _dino.transform.position.x;
-        float direction = Mathf.Sign(_foot.x - dinoX);
-        float launchX = Mathf.Clamp(dinoX + direction * 0.9f, _world.upperFloorXMin + 0.5f, _world.GapXMin - 0.5f);
-        water.transform.position = new Vector3(launchX, _world.upperFloorY - 2.1f);
-        water.GetComponent<B1Water>().Launch(new Vector2(0f, 9.2f));
+        TrySpitWater();
     }
 #endif
 }

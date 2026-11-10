@@ -177,7 +177,15 @@ public class TypeWriterB1 : MonoBehaviour
     private void SpawnItem(string word)
     {
         if (_world == null) return;
+        if (word == "WATER" && _world.TryHandleCraftedWater()) return;
         var pos = spawnAnchor + new Vector3(Random.Range(-0.3f, 0.3f), 2.5f, 0f);
+        Sprite logSprite = word == "WOOD" && requestSource != null ? requestSource.ConstructionLogSprite : null;
+        if (logSprite != null)
+        {
+            float dropX = Mathf.Clamp(-3.2f + (pos.x - spawnAnchor.x),
+                _world.upperFloorXMin + 1f, _world.GapXMin - 1f);
+            pos = new Vector3(dropX, _world.upperCeilingY + 0.65f);
+        }
 
         // 先加 SpriteRenderer（B1Item.Awake 里 GetComponent 要拿到它），再加物品组件（Awake 立即执行）
         var go = new GameObject("B1_" + word);
@@ -189,7 +197,11 @@ public class TypeWriterB1 : MonoBehaviour
             case "BALL": go.AddComponent<B1Ball>(); break;
             case "CHAIR": go.AddComponent<B1Chair>(); break;
             case "WATER": go.AddComponent<B1Water>(); break;
-            case "WOOD": go.AddComponent<B1Resource>().kind = B1Resource.Kind.Wood; break;
+            case "WOOD":
+                var wood = go.AddComponent<B1Resource>();
+                wood.kind = B1Resource.Kind.Wood;
+                if (logSprite != null) wood.ConfigureConstructionLog(logSprite, _world);
+                break;
             case "STONE": go.AddComponent<B1Resource>().kind = B1Resource.Kind.Stone; break;
             default: Destroy(go); return;
         }

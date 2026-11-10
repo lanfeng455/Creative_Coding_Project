@@ -1,47 +1,14 @@
 using UnityEngine;
 
-// Keep B1Item registration and lower-floor physics so the existing slingshot
-// and the dinosaur's WATER request can still see the same item.
+// Stay registered as WATER while the encounter animates the shot.
 public sealed class B2FireWaterItem : B1Water
 {
-    private B2FireWaterEncounter _encounter;
-    private bool _inDelivery;
-    private float _dryTime;
-
-    internal void Bind(B2FireWaterEncounter encounter, B1Water original)
+    protected override void Awake()
     {
-        _encounter = encounter;
-        gravity = original.gravity;
-        groundBounce = original.groundBounce;
-        wallBounce = original.wallBounce;
-        drag = original.drag;
-        waterColor = original.waterColor;
-        _sr.color = waterColor;
-        Launch(original.Velocity);
+        base.Awake();
+        _sr.enabled = false;
+        enabled = false;
     }
-
-    // The B2 item has its own Unity Update message. B1Water's automatic
-    // homing and collision are replaced for this item only.
-    private void Update()
-    {
-        if (_inDelivery) return;
-
-        StepPhysics(Time.deltaTime);
-        if (!Alive) return;
-
-        if (_world.OnUpperFloor(transform.position) && _encounter.TryReceive(this)) return;
-
-        _dryTime = FireHazard.ActiveFire == null && IsResting ? _dryTime + Time.deltaTime : 0f;
-        if (_dryTime >= 5f) Consume();
-    }
-
-    internal void BeginDelivery()
-    {
-        _inDelivery = true;
-        Launch(Vector2.zero);
-    }
-
-    internal void HideForWindup() => _sr.enabled = false;
 
     internal void ShowSpitAt(Vector3 mouth)
     {

@@ -121,6 +121,7 @@ public class SlingshotBand : MonoBehaviour
         foreach (var item in B1Item.All)
         {
             if (item == null || !item.Alive) continue;
+            if (item is B1Resource { IsConstructionLog: true }) continue;
             if (item.IsResting && still) continue;
             if (DistToBand(item.transform.position) > 0.3f + bandHalfWidth) continue;
 

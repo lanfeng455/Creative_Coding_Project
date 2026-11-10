@@ -49,7 +49,7 @@ public abstract class B1Item : MonoBehaviour
     /// <summary>通用步进：重力 + 落地 + 墙壁。
     /// 不再与上层地板底面碰撞——被弹力带弹起时可以穿过分界线到上层（和字符一致），
     /// 下落时则自然落在上层地板上。返回本帧事件：None/Rest/Ground/Wall</summary>
-    protected string StepPhysics(float dt)
+    protected string StepPhysics(float dt, float? floorY = null)
     {
         string evt = "None";
         var p = (Vector2)transform.position;
@@ -64,7 +64,7 @@ public abstract class B1Item : MonoBehaviour
         if (p.x > hi) { p.x = hi; _vel.x = -Mathf.Abs(_vel.x) * wallBounce; evt = "Wall"; }
 
         // 支撑地面（缺口感知）
-        float ground = _world.GroundYAt(p.x, p.y);
+        float ground = floorY ?? _world.GroundYAt(p.x, p.y);
         if (p.y - _radius <= ground && _vel.y <= 0f)
         {
             p.y = ground + _radius;
@@ -276,6 +276,18 @@ public class B1Resource : B1Item
     public Color stoneColor = new Color(0.62f, 0.65f, 0.7f);
 
     public Color MatColor => kind == Kind.Wood ? woodColor : stoneColor;
+    public bool IsConstructionLog => _constructionSprite != null;
+    private Sprite _constructionSprite;
+
+    internal void ConfigureConstructionLog(Sprite sprite, B1LayerConfig world)
+    {
+        _constructionSprite = sprite;
+        _world = world;
+        // The sprite has a bottom pivot, so the visible log rests on the platform.
+        _radius = 0f;
+        groundBounce = 0f;
+        transform.localScale = Vector3.one * 1.5f;
+    }
 
     protected override void Awake()
     {
@@ -292,15 +304,25 @@ public class B1Resource : B1Item
         // 贴图/颜色都在 Start 里设：kind 由 SpawnItem 在 AddComponent 之后赋值，
         // Awake 时还拿不到（会把石头也画成木头）。
         // 字符画素材：木头用 "="（叠木头/木板），石头用 "#"（砌石）
-        _sr.sprite = LetterPlant.GlyphSprite(kind == Kind.Wood ? '=' : '#');
-        _sr.color = MatColor;
+        _sr.sprite = _constructionSprite ?? LetterPlant.GlyphSprite(kind == Kind.Wood ? '=' : '#');
+        _sr.color = IsConstructionLog ? Color.white : MatColor;
     }
 
     protected override void OnDestroy() { base.OnDestroy(); All.Remove(this); }
 
     private void Update()
     {
-        StepPhysics(Time.deltaTime);
+        StepPhysics(Time.deltaTime, IsConstructionLog ? _world.upperFloorY : null);
+    }
+
+    internal void Carry(Transform carrier)
+    {
+        AudioManager.PlayAt(Sfx.LeafHarvest, transform.position);
+        Alive = false;
+        enabled = false;
+        transform.SetParent(carrier, false);
+        transform.localPosition = new Vector3(0.27f, 0.28f);
+        transform.localScale = Vector3.one * 0.9f;
     }
 
     /// <summary>恐龙捡走</summary>
@@ -320,6 +342,8 @@ public class B1Resource : B1Item
         {
             if (r == null || !r.Alive || r.kind != kind) continue;
             if (r._world == null || !r._world.OnUpperFloor(r.transform.position)) continue;
+            if (r.IsConstructionLog && (!r.IsResting || r.transform.position.y > r._world.upperFloorY + 0.01f))
+                continue;
             float d = (r.transform.position - pos).sqrMagnitude;
             if (d < bd) { bd = d; best = r; }
         }
