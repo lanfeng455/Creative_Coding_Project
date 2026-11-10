@@ -1,6 +1,0 @@
-{
-    "name": "Focus.FlowWater",
-    "rootNamespace": "Focus.FlowWater",
-    "references": ["UnityEngine.UI"],
-    "autoReferenced": true
-}

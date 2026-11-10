@@ -1,6 +1,6 @@
 // TypeWriterB1.cs —— B1 打字机
 // 字符被弹过上层缺口 → Add(char) 追加到缓冲区显示。
-// 缓冲区末尾命中词库（BALL/CHAIR/WATER）→ 消费字母、生成物品。
+// 匹配词库或恐龙当前需求 → 消费字母、生成物品。
 // 键盘 Backspace 删最后一个、Esc 清空（后期可换成手势操作）。
 
 using System.Collections.Generic;
@@ -20,6 +20,8 @@ public class TypeWriterB1 : MonoBehaviour
 
     [Header("词库（可扩展：单词 → 物品）")]
     public string[] words = { "BALL", "CHAIR", "WATER", "WOOD", "STONE" };
+    [SerializeField, Tooltip("指定恐龙后，只匹配它当前喊出的词，字母顺序不限")]
+    private DinoAgentB1 requestSource;
 
     [Header("显示")]
     [Tooltip("字母间距（世界单位）。调大更宽松")]
@@ -38,6 +40,7 @@ public class TypeWriterB1 : MonoBehaviour
     private B1LayerConfig _world;
     private TextMeshPro _cursor;
     private TextMeshPro _prompt;
+    private string _lastCheckedRequest;
 
     public string BufferText => new string(_buffer.ToArray());
 
@@ -88,16 +91,15 @@ public class TypeWriterB1 : MonoBehaviour
 
         _buffer.Add(c);
         if (_buffer.Count > maxBuffer)
-        {
-            _buffer.RemoveAt(0);
-            if (_charMeshes.Count > 0)
-            {
-                Destroy(_charMeshes[0].gameObject);
-                _charMeshes.RemoveAt(0);
-            }
-        }
+            RemoveLetterAt(0);
 
         RefreshVisual(addIndex: _buffer.Count - 1);
+
+        if (requestSource != null)
+        {
+            CheckRequest(bufferChanged: true);
+            return;
+        }
 
         // 词库匹配（末尾后缀命中）
         string text = BufferText;
@@ -111,16 +113,46 @@ public class TypeWriterB1 : MonoBehaviour
         }
     }
 
+    private void CheckRequest(bool bufferChanged = false)
+    {
+        string word = requestSource.RequestedWord;
+        if (!bufferChanged && word == _lastCheckedRequest) return;
+        _lastCheckedRequest = word;
+        if (_world == null || string.IsNullOrEmpty(word) || _buffer.Count < word.Length ||
+            System.Array.IndexOf(words, word) < 0)
+            return;
+
+        // Reserve a different buffer entry for every letter, including repeated letters.
+        var matchedIndices = new List<int>(word.Length);
+        foreach (char letter in word)
+        {
+            int index = _buffer.IndexOf(letter);
+            while (index >= 0 && matchedIndices.Contains(index))
+                index = _buffer.IndexOf(letter, index + 1);
+            if (index < 0) return;
+            matchedIndices.Add(index);
+        }
+
+        matchedIndices.Sort();
+        for (int i = matchedIndices.Count - 1; i >= 0; i--)
+            RemoveLetterAt(matchedIndices[i]);
+        SpawnItem(word);
+        RefreshVisual();
+    }
+
     public void Undo()
     {
         if (_buffer.Count == 0) return;
-        _buffer.RemoveAt(_buffer.Count - 1);
-        if (_charMeshes.Count > 0)
-        {
-            Destroy(_charMeshes[_charMeshes.Count - 1].gameObject);
-            _charMeshes.RemoveAt(_charMeshes.Count - 1);
-        }
+        RemoveLetterAt(_buffer.Count - 1);
         RefreshVisual();
+    }
+
+    private void RemoveLetterAt(int index)
+    {
+        _buffer.RemoveAt(index);
+        if (index >= _charMeshes.Count) return;
+        if (_charMeshes[index] != null) Destroy(_charMeshes[index].gameObject);
+        _charMeshes.RemoveAt(index);
     }
 
     public void Clear()
@@ -136,14 +168,7 @@ public class TypeWriterB1 : MonoBehaviour
     {
         // 移除缓冲区末尾 len 个字母
         for (int i = 0; i < w.Length && _buffer.Count > 0; i++)
-        {
-            _buffer.RemoveAt(_buffer.Count - 1);
-            if (_charMeshes.Count > 0)
-            {
-                Destroy(_charMeshes[_charMeshes.Count - 1].gameObject);
-                _charMeshes.RemoveAt(_charMeshes.Count - 1);
-            }
-        }
+            RemoveLetterAt(_buffer.Count - 1);
         SpawnItem(w);
         RefreshVisual();
     }
@@ -220,6 +245,7 @@ public class TypeWriterB1 : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Backspace)) Undo();
         if (Input.GetKeyDown(KeyCode.Escape)) Clear();
+        if (requestSource != null) CheckRequest();
         UpdateCursorBlink();
         UpdateFingertipDelete();
     }

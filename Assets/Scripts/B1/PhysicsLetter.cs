@@ -82,9 +82,12 @@ public class PhysicsLetter : MonoBehaviour
         // —— 越过上层分界线：继续上飞一段（惯性）→ 炸开 + 录入打字机 ——
         if (p.y > _world.upperFloorY + 0.6f)
         {
-            if (TypeWriterB1.Instance != null) TypeWriterB1.Instance.Add(Letter);
+            var writer = TypeWriterB1.Instance;
+            bool recorded = writer != null && char.IsLetter(Letter);
+            if (recorded) writer.Add(Letter);
             _dead = true;
-            B1Burst.Shatter(transform.position, new Color(0.55f, 1f, 0.8f), 7, size * 8f);
+            if (!recorded || !_world.NotifyLetterRecorded(new Vector3(p.x, p.y, transform.position.z), size))
+                B1Burst.Shatter(transform.position, new Color(0.55f, 1f, 0.8f), 7, size * 8f);
             AudioManager.PlayAt(Sfx.LeafHarvest, transform.position);
             Destroy(gameObject);
             return;

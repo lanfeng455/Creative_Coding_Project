@@ -90,8 +90,8 @@ public class B2House : MonoBehaviour
         _rooms.Add(room);
         _occupied.Add(cell);
 
-        // 落成特效
-        B1Burst.Shatter(room.center, room.color, 10, 4.5f);
+        if (!_world.NotifyRoomBuilt(room.root.transform, roomW, roomH, material))
+            B1Burst.Shatter(room.center, room.color, 10, 4.5f);
         return room;
     }
 

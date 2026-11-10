@@ -2,6 +2,7 @@
 // 上下两层：下层=玩家操作区（字符雨/弹力带/TypeWriter），上层=恐龙生活区。
 // 上层地板在爬梯通道处留缺口，物品从这里掉下去/被弹上来。
 
+using System;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -34,6 +35,25 @@ public class B1LayerConfig : MonoBehaviour
     [Header("视觉（编辑器摆放，可留空）")]
     public SpriteRenderer lowerFloorVisual;
     public SpriteRenderer upperFloorVisual;
+
+    public event Action<Vector3, float> LetterRecorded;
+    public event Action<Transform, float, float, string> RoomBuilt;
+
+    internal bool NotifyLetterRecorded(Vector3 position, float size)
+    {
+        var listeners = LetterRecorded;
+        if (listeners == null) return false;
+        listeners(position, size);
+        return true;
+    }
+
+    internal bool NotifyRoomBuilt(Transform room, float width, float height, string material)
+    {
+        var listeners = RoomBuilt;
+        if (listeners == null) return false;
+        listeners(room, width, height, material);
+        return true;
+    }
 
     /// <summary>层间缺口左沿（上层地板右端）</summary>
     public float GapXMin => upperFloorXMax + gapPadding;

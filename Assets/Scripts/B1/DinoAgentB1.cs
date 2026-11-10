@@ -23,6 +23,17 @@ public class DinoAgentB1 : MonoBehaviour
     [Range(0f, 1f)] public float ballNeedChance = 0.3f;
     /// <summary>当前需求："WOOD"/"STONE"/"BALL"/null。调度器用它加权字符雨。</summary>
     public string CurrentNeed { get; private set; }
+
+    public string RequestedWord
+    {
+        get
+        {
+            if (FireHazard.ActiveFire != null)
+                return B1Water.WaterInFlight() ? null : "WATER";
+            return _state == State.Fleeing ? null : CurrentNeed;
+        }
+    }
+
     private float _needTimer;
     private B2House _house;
     private string _carrying;          // 已捡起的建材："WOOD"/"STONE"
@@ -135,10 +146,8 @@ public class DinoAgentB1 : MonoBehaviour
         }
 
         // 气泡：火灾求救 > 需求
-        if (fire != null) SetBubble(B1Water.WaterInFlight() ? null : "WATER!");
-        else if (_state == State.Fleeing) SetBubble(null);
-        else if (CurrentNeed != null) SetBubble(CurrentNeed + "!");
-        else SetBubble(null);
+        string request = RequestedWord;
+        SetBubble(request == null ? null : request + "!");
 
         TryStompBall();
         ApplyMotion(dt);
