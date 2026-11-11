@@ -9,6 +9,8 @@ public class B1EventScheduler : MonoBehaviour
     [Header("引用")]
     public B1LayerConfig world;
     public DinoAgentB1 dino;
+    [Tooltip("留空自动 Find。用来读出已拼的字母，算出还缺哪些")]
+    public TypeWriterB1 typeWriter;
 
     [Header("字符雨")]
     [Tooltip("生成间隔（秒）。越小越密；字落地就碎，寿命约 1.3 秒，建议 0.35~0.55")]
@@ -47,6 +49,7 @@ public class B1EventScheduler : MonoBehaviour
     {
         if (world == null) world = FindObjectOfType<B1LayerConfig>();
         if (dino == null) dino = FindObjectOfType<DinoAgentB1>();
+        if (typeWriter == null) typeWriter = FindObjectOfType<TypeWriterB1>();
         _threatTimer = threatFirstDelay;
         _fireTimer = fireFirstDelay;
         Debug.Log($"[B2Sched] Start. world={(world != null ? "已设置" : "null")}, " +
@@ -54,6 +57,20 @@ public class B1EventScheduler : MonoBehaviour
     }
 
     private bool _firstLetterLogged;
+    /// <summary>word 里还没被打字机拼出来的字母（按重数扣减）。
+    /// 已拼的字母无论落在缓冲区哪个位置都算数，和 TypeWriterB1 的匹配规则一致。</summary>
+    private string MissingLetters(string word)
+    {
+        string typed = typeWriter != null ? typeWriter.BufferText : "";
+        var rest = new System.Text.StringBuilder(word);
+        foreach (char t in typed)
+        {
+            int i = rest.ToString().IndexOf(t);
+            if (i >= 0) rest.Remove(i, 1);
+        }
+        return rest.ToString();
+    }
+
     private void Update()
     {
         float dt = Time.deltaTime;
@@ -64,16 +81,19 @@ public class B1EventScheduler : MonoBehaviour
         {
             _letterAcc = 0f;
 
-            // 动态难度：当前焦点词 = 火灾时 WATER，其次恐龙需求（WOOD/STONE/BALL）
+            // 动态难度：当前焦点词 = 火灾时 WATER，其次恐龙需求（WOOD/STONE/BALL）。
+            // 再把打字机里已经拼出来的字母扣掉 —— 只强化"还缺的那几个字"，
+            // 例如 WOOD 已拼 WO → 只高频掉 O、D，W 不再刷屏。
             string focus = FireHazard.ActiveFire != null ? "WATER"
                          : dino != null ? dino.CurrentNeed : null;
+            if (!string.IsNullOrEmpty(focus)) focus = MissingLetters(focus);
 
             char c;
-            if (focus != null && Random.value < needLetterChance)
+            if (!string.IsNullOrEmpty(focus) && Random.value < needLetterChance)
             {
-                c = focus[Random.Range(0, focus.Length)];      // 需求字母：高频
+                c = focus[Random.Range(0, focus.Length)];      // 还缺的字母：高频
             }
-            else if (focus != null && Random.value < unrelatedSkipChance)
+            else if (!string.IsNullOrEmpty(focus) && Random.value < unrelatedSkipChance)
             {
                 return;                                         // 无关字母：偶发（本次跳过）
             }

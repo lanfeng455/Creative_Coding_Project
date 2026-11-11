@@ -614,6 +614,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::B1EventScheduler
   world: {fileID: 1235745678}
   dino: {fileID: 0}
+  typeWriter: {fileID: 0}
   letterInterval: 0.45
   maxLiveLetters: 20
   letterFallSpeed: 0.8
@@ -1410,7 +1411,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 1969388816}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -1421,7 +1422,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: -100
+  m_SortingOrder: 1
   m_TargetDisplay: 0
 --- !u!224 &966732031
 RectTransform:
@@ -1440,8 +1441,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0.7149999}
-  m_SizeDelta: {x: 1920, y: 1080}
+  m_AnchoredPosition: {x: 0, y: -1.5624}
+  m_SizeDelta: {x: 1920, y: 584.2953}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &997487397
 GameObject:
@@ -1806,44 +1807,6 @@ MonoBehaviour:
   gapPadding: 0.05
   lowerFloorVisual: {fileID: 696004301}
   upperFloorVisual: {fileID: 0}
---- !u!114 &1235745680
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1235745677}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6d2ae388250e4bf7831e8b3c3e0e356e, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::B2LetterSpark
-  sheet: {fileID: 2800000, guid: 1128b56191f9475e9282fb2100376767, type: 3}
---- !u!114 &1235745681
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1235745677}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fbb3dd495414b62a9b870ce0a02abf0, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::B2RoomLanding
---- !u!114 &1235745682
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1235745677}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f6ba5850d68d4e2ea7b028645e61debc, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::B2RoomDust
-  sheet: {fileID: 2800000, guid: 80f073c63b704baf9d26ca9ce5716f76, type: 3}
 --- !u!4 &1235745679
 Transform:
   m_ObjectHideFlags: 0
@@ -1859,6 +1822,44 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1235745680
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1235745677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d2ae388250e4bf7831e8b3c3e0e356e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::B2LetterSpark
+  sheet: {fileID: 2800000, guid: 1128b56191f9475e9282fb2100376767, type: 3}
+--- !u!114 &1235745681
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1235745677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fbb3dd495414b62a9b870ce0a02abf0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::B2RoomLanding
+--- !u!114 &1235745682
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1235745677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6ba5850d68d4e2ea7b028645e61debc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::B2RoomDust
+  sheet: {fileID: 2800000, guid: 80f073c63b704baf9d26ca9ce5716f76, type: 3}
 --- !u!1 &1462830671
 GameObject:
   m_ObjectHideFlags: 0
@@ -2045,6 +2046,107 @@ MonoBehaviour:
   spread: 0.14
   fadeDuration: 0.6
   minHoldTime: 0.08
+--- !u!1 &1725352303
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1725352305}
+  - component: {fileID: 1725352304}
+  m_Layer: 0
+  m_Name: AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1725352304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1725352303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6243db0a4fcded7448477b75b92c810c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioManager
+  sfxEntries:
+  - sfx: 1
+    clip: {fileID: 8300000, guid: 0e852bbe69e265e4784baabd34616329, type: 3}
+    volume: 1
+  - sfx: 2
+    clip: {fileID: 8300000, guid: 106a729ba4aa06246afc9a3e7a9f4eb0, type: 3}
+    volume: 1
+  - sfx: 7
+    clip: {fileID: 8300000, guid: d988c56adad0d934193174c80419984d, type: 3}
+    volume: 0.2
+  - sfx: 10
+    clip: {fileID: 8300000, guid: 8446e0ade9c975d48b09921800a99ac1, type: 3}
+    volume: 1
+  - sfx: 11
+    clip: {fileID: 8300000, guid: c505cde21c95ba647a4732a2b5c948e7, type: 3}
+    volume: 1
+  - sfx: 12
+    clip: {fileID: 8300000, guid: 1dbf8ad965680f545a34f418ac305e9c, type: 3}
+    volume: 1
+  - sfx: 13
+    clip: {fileID: 8300000, guid: 90acd272c3c3b6f409d3d325fbb5ee00, type: 3}
+    volume: 1
+  - sfx: 14
+    clip: {fileID: 8300000, guid: cfcf4e1e26a15ab44abcb35ed52d50b8, type: 3}
+    volume: 1
+  - sfx: 15
+    clip: {fileID: 8300000, guid: 2bc178d1d77542d48b227c295e454e53, type: 3}
+    volume: 1
+  - sfx: 16
+    clip: {fileID: 8300000, guid: 715f6509e7a39174c84112785deb5c8e, type: 3}
+    volume: 1
+  - sfx: 17
+    clip: {fileID: 8300000, guid: 715f6509e7a39174c84112785deb5c8e, type: 3}
+    volume: 1
+  - sfx: 18
+    clip: {fileID: 8300000, guid: 67c6422f5dfd3064cba8dcd858bb756b, type: 3}
+    volume: 1
+  - sfx: 19
+    clip: {fileID: 8300000, guid: 852cd4aa93151044f87b71ac89e157f8, type: 3}
+    volume: 1
+  - sfx: 20
+    clip: {fileID: 8300000, guid: 3ae426646cd6ff9479f27fdc83a82fe9, type: 3}
+    volume: 1
+  - sfx: 21
+    clip: {fileID: 8300000, guid: 2bc178d1d77542d48b227c295e454e53, type: 3}
+    volume: 1
+  sfxVolume: 1
+  minRepeatInterval: 0.06
+  musicEntries:
+  - music: 1
+    clip: {fileID: 8300000, guid: 857a35944b21edb409fe6af161d6fa0d, type: 3}
+    volume: 0.5
+  - music: 2
+    clip: {fileID: 8300000, guid: a19a55e10a14a9d4b9f1ab225446fdb0, type: 3}
+    volume: 0.5
+  musicVolume: 0.7
+  musicCrossFade: 0.8
+--- !u!4 &1725352305
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1725352303}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.45934, y: 1.02498, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1764862106
 GameObject:
   m_ObjectHideFlags: 0
@@ -2388,7 +2490,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DinoAgentB1
   world: {fileID: 1235745678}
   bubble: {fileID: 745690698}
-  constructionLogSprite: {fileID: 21300000, guid: 1cc4e35ea3944d54a45ac8a2dc46f2b8, type: 3}
+  constructionLogSprite: {fileID: 21300000, guid: 1cc4e35ea3944d54a45ac8a2dc46f2b8,
+    type: 3}
   needIntervalRange: {x: 7, y: 13}
   ballNeedChance: 0.3
   walkSpeed: 2.2
@@ -2406,6 +2509,7 @@ MonoBehaviour:
   hopForce: 1.2
   squashAmount: 0.12
   fleeSafeDist: 4.2
+  threatNoticeRange: 3.2
 --- !u!1 &1969388814
 GameObject:
   m_ObjectHideFlags: 0
@@ -2678,16 +2782,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TypeWriterB1
   display: {fileID: 758140355}
-  requestSource: {fileID: 1836402203}
   spawnAnchor: {x: -7.2599998, y: -0.19999993, z: 0}
   maxBuffer: 12
   words:
   - BALL
   - CHAIR
   - WATER
+  requestSource: {fileID: 1836402203}
   charSpacing: 0.72
   charFontSize: 4.5
+  deleteZoneOffsetX: 0
   fingertipDeleteEnabled: 1
+  deleteDwell: 0.16
+  reArmDelay: 0.35
+  leaveMarginX: 0.12
+  leaveMarginY: 0.2
 --- !u!4 &1999578283
 Transform:
   m_ObjectHideFlags: 0
@@ -3175,3 +3284,4 @@ SceneRoots:
   - {fileID: 521771836}
   - {fileID: 2094318126}
   - {fileID: 966732031}
+  - {fileID: 1725352305}

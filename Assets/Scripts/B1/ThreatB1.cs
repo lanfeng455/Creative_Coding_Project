@@ -129,12 +129,20 @@ public class FireHazard : MonoBehaviour
         float x = Random.Range(world.upperFloorXMin + 1.5f, world.GapXMin - 1.5f);
         transform.position = new Vector3(x, world.upperFloorY + 0.4f, 0f);
         ActiveFire = this;
-        AudioManager.PlayAt(Sfx.Corruption, transform.position);
+        AudioManager.PlayAt(Sfx.FireStart, transform.position);
+        AudioManager.PlayMusic(Music.Tension, 1.2f);
     }
 
     private void OnDestroy()
     {
-        if (ActiveFire == this) ActiveFire = null;
+        if (!Application.isPlaying) return;
+        if (ActiveFire != this) return;   // 不是当前这场火（场景卸载/已被替换）→ 不做收尾
+        // 统一在这里收尾：不管是谁把火删掉的（FireHazard.Extinguish、
+        // B2FireWaterEncounter 的 Destroy(fire.gameObject)、还是别的手段），
+        // 都保证 火光/音效/速度/音乐 一定会恢复，不会卡在 Tension。
+        ActiveFire = null;
+        AudioManager.PlayAt(Sfx.FireOut, transform.position);
+        AudioManager.PlayMusic(Music.Main, 1.8f);
     }
 
     private void Update()
@@ -160,12 +168,10 @@ public class FireHazard : MonoBehaviour
     }
     private float _sparkAcc;
 
-    /// <summary>WATER 命中 → 灭火</summary>
+    /// <summary>WATER 命中 → 灭火（音效与 BGM 收尾统一在 OnDestroy）</summary>
     public void Extinguish()
     {
         B1Burst.Shatter(transform.position, new Color(0.4f, 0.8f, 1f), 10, 5f);
-        AudioManager.PlayAt(Sfx.RainStart, transform.position);
-        ActiveFire = null;
         Destroy(gameObject);
     }
 }

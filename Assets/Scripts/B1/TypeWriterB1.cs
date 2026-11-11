@@ -29,14 +29,32 @@ public class TypeWriterB1 : MonoBehaviour
     [Tooltip("字母字号")]
     public float charFontSize = 4.5f;
 
+    [Header("手感校正")]
+    [Tooltip("删除判定区整体水平偏移（世界单位，正值=右移）。偏右就调负、偏左就调正")]
+    public float deleteZoneOffsetX = 0f;
+
     [Header("指尖删除（单手指尖悬停在打字机区域）")]
     public bool fingertipDeleteEnabled = true;
+    [Tooltip("指尖要在同一个字母格上停留多久才删（秒）。调大更稳，防手抖连删")]
+    public float deleteDwell = 0.16f;
+    [Tooltip("删一次后，指尖要离开文本区多久才解锁下一次删除（秒）")]
+    public float reArmDelay = 0.35f;
+    [Tooltip("判定\"离开\"时判据外扩的横向余量（世界单位）：手抖刚出框不算离开")]
+    public float leaveMarginX = 0.12f;
+    [Tooltip("判定\"离开\"时判据外扩的纵向余量（世界单位）")]
+    public float leaveMarginY = 0.20f;
     /// <summary>删过一次后必须先让指尖离开文本区域，才允许删下一个（否则手停着会连删）</summary>
     private bool _deleteArmed = true;
+    private float _insideTime;              // 指尖在当前格上停留的时长
+    private int _dwellSlot = int.MinValue;  // 当前停留的槽位
+    private float _outsideTime;             // 指尖在外扩框之外的持续时长
     private RightHandIndexRayProvider _ray;
 
     private readonly List<char> _buffer = new();
     private readonly List<TextMeshPro> _charMeshes = new();
+    /// <summary>每个字母占用的槽位（删字后槽位留空，等指尖离开文本行才整体缩进）</summary>
+    private readonly List<int> _slots = new();
+    private int _nextSlot;   // 下一个新字母使用的槽位
     private B1LayerConfig _world;
     private TextMeshPro _cursor;
     private TextMeshPro _prompt;
@@ -90,27 +108,38 @@ public class TypeWriterB1 : MonoBehaviour
         if (!char.IsLetter(c)) return;
 
         _buffer.Add(c);
+        _slots.Add(_nextSlot++);
         if (_buffer.Count > maxBuffer)
             RemoveLetterAt(0);
 
-        RefreshVisual(addIndex: _buffer.Count - 1);
+        // 没有"删出来的空缺"时按常规紧凑排版；有空缺就保持原样，等指尖移开再缩进
+        RefreshVisual(addIndex: _buffer.Count - 1, compact: _nextSlot == _buffer.Count);
+        AudioManager.PlayAt(Sfx.LetterRecord, transform.position);
 
-        if (requestSource != null)
-        {
-            CheckRequest(bufferChanged: true);
-            return;
-        }
-
-        // 词库匹配（末尾后缀命中）
-        string text = BufferText;
+        // 词库匹配：缓冲区末尾必须按顺序等于该词。
+        // 不看恐龙此刻在喊什么 —— 火灾期间它只喊 WATER，但 BALL/WOOD/STONE
+        // 照样可以合法拼出来堆到上层（火灭后恐龙照样会去用）。
         foreach (var w in words)
         {
-            if (text.EndsWith(w, System.StringComparison.Ordinal))
+            if (BufferEndsWith(w))
             {
                 ConsumeWord(w);
                 break;
             }
         }
+
+        // 恐龙当前需求单独确认一次（需求可能在字打出来之后才出现，例如火刚烧起来）
+        if (requestSource != null) CheckRequest(bufferChanged: true);
+    }
+
+    /// <summary>缓冲区末尾 N 个字母是否按顺序等于 word（前面允许多余字母，但要按顺序接在末尾）</summary>
+    private bool BufferEndsWith(string word)
+    {
+        if (string.IsNullOrEmpty(word) || _buffer.Count < word.Length) return false;
+        int start = _buffer.Count - word.Length;
+        for (int i = 0; i < word.Length; i++)
+            if (_buffer[start + i] != word[i]) return false;
+        return true;
     }
 
     private void CheckRequest(bool bufferChanged = false)
@@ -118,26 +147,14 @@ public class TypeWriterB1 : MonoBehaviour
         string word = requestSource.RequestedWord;
         if (!bufferChanged && word == _lastCheckedRequest) return;
         _lastCheckedRequest = word;
-        if (_world == null || string.IsNullOrEmpty(word) || _buffer.Count < word.Length ||
+        if (_world == null || string.IsNullOrEmpty(word) ||
             System.Array.IndexOf(words, word) < 0)
             return;
 
-        // Reserve a different buffer entry for every letter, including repeated letters.
-        var matchedIndices = new List<int>(word.Length);
-        foreach (char letter in word)
-        {
-            int index = _buffer.IndexOf(letter);
-            while (index >= 0 && matchedIndices.Contains(index))
-                index = _buffer.IndexOf(letter, index + 1);
-            if (index < 0) return;
-            matchedIndices.Add(index);
-        }
+        // 和词库同一条规则：末尾必须按顺序拼出该词，不认"散着凑齐字母"
+        if (!BufferEndsWith(word)) return;
 
-        matchedIndices.Sort();
-        for (int i = matchedIndices.Count - 1; i >= 0; i--)
-            RemoveLetterAt(matchedIndices[i]);
-        SpawnItem(word);
-        RefreshVisual();
+        ConsumeWord(word);
     }
 
     public void Undo()
@@ -150,6 +167,7 @@ public class TypeWriterB1 : MonoBehaviour
     private void RemoveLetterAt(int index)
     {
         _buffer.RemoveAt(index);
+        if (index < _slots.Count) _slots.RemoveAt(index);
         if (index >= _charMeshes.Count) return;
         if (_charMeshes[index] != null) Destroy(_charMeshes[index].gameObject);
         _charMeshes.RemoveAt(index);
@@ -158,6 +176,8 @@ public class TypeWriterB1 : MonoBehaviour
     public void Clear()
     {
         _buffer.Clear();
+        _slots.Clear();
+        _nextSlot = 0;
         foreach (var m in _charMeshes) if (m != null) Destroy(m.gameObject);
         _charMeshes.Clear();
         RefreshVisual();
@@ -191,6 +211,7 @@ public class TypeWriterB1 : MonoBehaviour
         var go = new GameObject("B1_" + word);
         go.AddComponent<SpriteRenderer>();
         go.transform.position = pos;
+        if (word == "WOOD") AudioManager.PlayAt(Sfx.WoodDeliver, pos);
 
         switch (word)
         {
@@ -212,34 +233,43 @@ public class TypeWriterB1 : MonoBehaviour
 
     // —— 显示：主文本行 + 逐字母动画（世界空间 TMP） ——
 
-    private void RefreshVisual(int addIndex = -1)
+    /// <summary>重排字母。compact=true 时把字母压到 0..n-1 槽位（缺口缩进）；
+    /// compact=false 时各字母保留原槽位（删除后留空，等指尖移开再缩进）。</summary>
+    private void RefreshVisual(int addIndex = -1, bool compact = true)
     {
         // display 只作为锚点/样式母版，逐字母由 _charMeshes 渲染（避免同一串文字叠两层）
         display.text = "";
 
-        while (_charMeshes.Count < _buffer.Count)
+        if (compact)
         {
-            var tm = B1Text.Make("TW_Char", transform, charFontSize, display.color, 2);
-            _charMeshes.Add(tm);
+            _slots.Clear();
+            for (int i = 0; i < _buffer.Count; i++) _slots.Add(i);
+            _nextSlot = _buffer.Count;
         }
+        while (_slots.Count < _buffer.Count) _slots.Add(_nextSlot++);
+        while (_slots.Count > _buffer.Count) _slots.RemoveAt(_slots.Count - 1);
+
+        while (_charMeshes.Count < _buffer.Count)
+            _charMeshes.Add(B1Text.Make("TW_Char", transform, charFontSize, display.color, 2));
         while (_charMeshes.Count > _buffer.Count)
         {
             Destroy(_charMeshes[_charMeshes.Count - 1].gameObject);
             _charMeshes.RemoveAt(_charMeshes.Count - 1);
         }
+
         for (int i = 0; i < _charMeshes.Count; i++)
         {
             if (_charMeshes[i] == null) continue;
             _charMeshes[i].text = _buffer[i].ToString();
             var lp = _charMeshes[i].transform.localPosition;
-            lp.x = charSpacing + i * charSpacing; lp.y = -0.7f; // 留出提示符 ">" 的位置
+            lp.x = charSpacing * (_slots[i] + 1); lp.y = -0.7f; // 留出提示符 ">" 的位置
             _charMeshes[i].transform.localPosition = lp;
         }
-        // 光标跟在最后一个字母后面
+        // 光标跟在最后一个槽位后面
         if (_cursor != null)
         {
             var cp = _cursor.transform.localPosition;
-            cp.x = charSpacing + _charMeshes.Count * charSpacing; cp.y = -0.7f;
+            cp.x = charSpacing * (_nextSlot + 1); cp.y = -0.7f;
             _cursor.transform.localPosition = cp;
         }
         if (addIndex >= 0 && addIndex < _charMeshes.Count && _charMeshes[addIndex] != null)
@@ -262,9 +292,10 @@ public class TypeWriterB1 : MonoBehaviour
         UpdateFingertipDelete();
     }
 
-    /// <summary>指尖落到可见文本行上 → 删除最后一个字母。
-    /// 判定框严格贴合画出来的文字（左沿提示符、右沿光标）。
-    /// 删一次后必须把指尖移出文本区域才允许删下一个 —— 手停着不会连删一串。</summary>
+    /// <summary>指尖落到哪个字母的格子上就删哪个（不再固定删末尾）。
+    /// 删除后该槽位留空、其余字母不移动；等指尖彻底离开文本区后，空缺才整体缩进补上。
+    /// 三重防误删：① 停留 deleteDwell 秒才删 ② 删一次后要离开外扩框 reArmDelay 秒才解锁
+    /// ③ 外扩框做滞回，手抖刚出框不算离开 —— 避免"缩进 → 字跑到指尖下 → 又删一个"的连锁清空。</summary>
     private void UpdateFingertipDelete()
     {
         if (!fingertipDeleteEnabled || _ray == null) return;
@@ -272,60 +303,106 @@ public class TypeWriterB1 : MonoBehaviour
         var cam = Camera.main;
         if (cam == null) return;
 
-        // 用"实际渲染出来的字符包围盒"做判定（TemplateB 的擦除也是按字母自身位置算，
-        // 不是写死一个大框）。这样判定范围永远等于玩家看到的字，不会偏左/偏右。
         if (!TryGetTextBounds(out Bounds box))
         {
-            _deleteArmed = true;   // 没字时不锁
+            _deleteArmed = true;
+            _insideTime = 0f; _dwellSlot = int.MinValue; _outsideTime = 0f;
             return;
         }
-        box.Expand(0.18f);         // 一点点容差，指尖贴着字边也能触发
+
+        // 外扩框只用于判定"离开"；内框才是真正能删字的范围
+        Bounds outer = box;
+        outer.Expand(new Vector3(leaveMarginX * 2f, leaveMarginY * 2f, 0f));
 
         float zDist = -cam.transform.position.z;
-        bool inside = false;
+        bool inOuter = false;
+        int tipCount = 0;
+        int slot = int.MinValue;
         foreach (var tip in CandidateTips())
         {
             if (tip == Vector2.zero) continue;
+            tipCount++;
             Vector3 w = cam.ScreenToWorldPoint(new Vector3(tip.x, tip.y, zDist));
+            if (w.x < outer.min.x || w.x > outer.max.x ||
+                w.y < outer.min.y || w.y > outer.max.y) continue;
+
+            inOuter = true;
             if (w.x >= box.min.x && w.x <= box.max.x &&
-                w.y >= box.min.y && w.y <= box.max.y) { inside = true; break; }
+                w.y >= box.min.y && w.y <= box.max.y)
+            {
+                // 指尖落在哪个槽位：槽位 = round(局部x / 字距) - 1（每个字占一格）
+                int s = Mathf.RoundToInt(transform.InverseTransformPoint(w).x / charSpacing) - 1;
+                if (_slots.IndexOf(s) >= 0) slot = s;
+            }
         }
 
-        if (!inside) { _deleteArmed = true; return; }  // 指尖移开 → 重新上膛
-        if (!_deleteArmed) return;
+        // 没检测到手（追踪掉帧）：既不算离开也不算命中，状态原样保持
+        if (tipCount == 0) return;
 
-        // 删除反馈：在被删字母处炸一小团红色碎屑 + 音效
-        Vector3 at = _charMeshes.Count > 0
-            ? _charMeshes[_charMeshes.Count - 1].transform.position
+        // —— 指尖在外扩框之外：累计离开时间，够久才解锁并缩进 ——
+        if (!inOuter)
+        {
+            _outsideTime += Time.deltaTime;
+            _insideTime = 0f;
+            _dwellSlot = int.MinValue;
+            if (_outsideTime >= reArmDelay)
+            {
+                _deleteArmed = true;
+                if (_nextSlot != _buffer.Count) RefreshVisual();   // 空缺缩进补上
+            }
+            return;
+        }
+        _outsideTime = 0f;
+
+        // —— 上膛中且稳定停在某个字母格上，才删 ——
+        if (!_deleteArmed) return;
+        if (slot != _dwellSlot) { _dwellSlot = slot; _insideTime = 0f; }
+        if (slot == int.MinValue) return;      // 指在空白/光标上：不删，也不算删过
+
+        _insideTime += Time.deltaTime;
+        if (_insideTime < deleteDwell) return;
+
+        int index = _slots.IndexOf(slot);
+        if (index < 0) return;
+        Vector3 at = index < _charMeshes.Count && _charMeshes[index] != null
+            ? _charMeshes[index].transform.position
             : new Vector3(box.center.x, box.center.y, 0f);
         B1Burst.Shatter(at, new Color(1f, 0.5f, 0.5f), 5, 4f);
-        AudioManager.PlayAt(Sfx.LeafHarvest, at);
-        Undo();
-        _deleteArmed = false;
+        AudioManager.PlayAt(Sfx.LetterDelete, at);
+        RemoveLetterAt(index);         // 只删这一个字母，不重排
+        _deleteArmed = false;          // 等指尖离开外扩框足够久才解锁
+        _insideTime = 0f;
+        _dwellSlot = int.MinValue;
     }
 
-    /// <summary>提示符 + 已录入字母 + 光标 的联合渲染包围盒（世界坐标）</summary>
+    /// <summary>按实际排版算出的文本行矩形（世界坐标）。
+    /// 不用 TMP 的 Renderer.bounds —— 它含字体内边距/行高，比看到的字大一圈，
+    /// 指尖还没碰到字就会触发。这里直接用排版参数：第一个字母 → 光标。</summary>
     private bool TryGetTextBounds(out Bounds box)
     {
-        Bounds acc = default;
-        bool any = false;
+        box = default;
+        if (_prompt == null) return false;
 
-        void Encapsulate(TextMeshPro tm)
+        float halfH = charFontSize * 0.1f * 0.55f;   // 字高的一半（字号 10 ≈ 1 世界单位，约等于字形高度）
+        float halfW = charSpacing * 0.35f;           // 单字横向半宽（约半个字距）
+        // 左沿 = 第一个还占着的槽位；还没拼字时以 ">" 提示符为准（提示符本身不可删）。
+        int minSlot = -1;
+        if (_slots.Count > 0)
         {
-            if (tm == null || !tm.gameObject.activeInHierarchy) return;
-            var r = tm.GetComponent<Renderer>();
-            if (r == null) return;
-            if (!any) { acc = r.bounds; any = true; }
-            else acc.Encapsulate(r.bounds);
+            minSlot = _slots[0];
+            foreach (int s in _slots) if (s < minSlot) minSlot = s;
         }
+        float left = _slots.Count > 0
+            ? charSpacing * (minSlot + 1) - halfW - 0.06f
+            : -halfW - 0.06f;
+        left += deleteZoneOffsetX;
+        float right = charSpacing * (_nextSlot + 1) + halfW + 0.06f + deleteZoneOffsetX; // 光标右沿
+        float y = -0.7f;
 
-        Encapsulate(_prompt);
-        foreach (var m in _charMeshes) Encapsulate(m);
-        Encapsulate(_cursor);
-
-        box = acc;
-        // 首帧 TMP 网格还没生成时 bounds 是零尺寸，此时不要判定（否则会在原点误删）
-        return any && box.size.x > 0.05f && box.size.y > 0.05f;
+        Vector3 a = transform.TransformPoint(new Vector3(left, y - halfH, 0f));
+        Vector3 b = transform.TransformPoint(new Vector3(right, y + halfH, 0f));
+        box.SetMinMax(Vector3.Min(a, b), Vector3.Max(a, b));
+        return box.size.x > 0.05f && box.size.y > 0.05f;
     }
 
     /// <summary>当前可用的指尖屏幕坐标（单手 / 双手 A、B 都算）</summary>

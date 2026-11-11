@@ -226,9 +226,19 @@ public class GlyphRain : MonoBehaviour
             return;
         }
 
-        UpdateRoof();
-        UpdateRoofVisuals();
-        EraseTypedLetters();
+        // 屋檐/擦除只服务于 AlphabetBar（给字母行浇水）。纯背景雨（bar 为空）不需要，
+        // 而且 World Space Canvas 没有 worldCamera 时指尖换算也不可靠，直接跳过。
+        if (bar != null)
+        {
+            UpdateRoof();
+            UpdateRoofVisuals();
+            EraseTypedLetters();
+        }
+        else
+        {
+            _roofValid = false;
+            if (_roofShown) SetRoofVisible(false);
+        }
 
         // —— 下落方向（倾角） ——
         UpdateFallDirection();

@@ -18,6 +18,10 @@ public class B2House : MonoBehaviour
     public Color woodColor = new Color(0.72f, 0.5f, 0.28f);
     public Color stoneColor = new Color(0.62f, 0.65f, 0.7f);
 
+    [Header("耐久")]
+    [Tooltip("每个房间要挨几次红字符才倒塌（1 = 一碰就塌，原来的行为）")]
+    public int roomHp = 3;
+
     public class Room
     {
         public int col, row;
@@ -25,6 +29,8 @@ public class B2House : MonoBehaviour
         public GameObject root;
         public Vector3 center;
         public Color color;
+        /// <summary>剩余耐久：红字符每命中一次 -1，归零才倒塌</summary>
+        public int hp;
     }
 
     private readonly List<Room> _rooms = new();
@@ -134,6 +140,7 @@ public class B2House : MonoBehaviour
     {
         _rooms.Add(room);
         _occupied.Add(new Vector2Int(room.col, room.row));
+        room.hp = Mathf.Max(1, roomHp);
 
         if (!_world.NotifyRoomBuilt(room.root.transform, roomW, roomH, room.material))
             B1Burst.Shatter(room.center, room.color, 10, 4.5f);
@@ -157,10 +164,21 @@ public class B2House : MonoBehaviour
         return _rooms[Random.Range(0, _rooms.Count)];
     }
 
-    /// <summary>摧毁一个房间（红字符命中）：碎裂反馈 + 从结构里移除</summary>
+    /// <summary>红字符命中一个房间：先掉血，耐久归零才真正倒塌</summary>
     public void DestroyRoom(Room room)
     {
         if (room == null || !_rooms.Contains(room)) return;
+
+        if (room.hp <= 0) room.hp = Mathf.Max(1, roomHp);
+        room.hp--;
+        if (room.hp > 0)
+        {
+            // 掉血反馈：少量红色碎屑 + 音效，结构保留
+            B1Burst.Shatter(room.center, new Color(1f, 0.35f, 0.35f), 5, 3.5f);
+            AudioManager.PlayAt(Sfx.ThreatHit, room.center);
+            return;
+        }
+
         // 若上方有房间，先一起塌（简化：只拆本间，支撑检查留给 TryAdd 的下次）
         B1Burst.Shatter(room.center, room.color, 14, 5f);
         B1Burst.Shatter(room.center, new Color(1f, 0.3f, 0.3f), 6, 4f);
