@@ -55,6 +55,7 @@
     <Compile Include="Assets/MediaPipeUnity/Editor/CreateAssetBundles.cs" />
     <Compile Include="Assets/MediaPipeUnity/Editor/PackageExporter.cs" />
     <Compile Include="Assets/Editor/B2SceneBuilder.cs" />
+    <Compile Include="Assets/EnvironmentArt/ForestGlade/Editor/ForestGladeBackgroundInstaller.cs" />
     <Compile Include="Assets/Editor/FocusUiBuilder.cs" />
     <Compile Include="Assets/Editor/B1SceneBuilder.cs" />
   </ItemGroup>

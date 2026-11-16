@@ -79,11 +79,13 @@
     <Compile Include="Assets/PrototypeB2FireWaterVFX/B2FireWaterEffects.cs" />
     <Compile Include="Assets/Scripts/LetterAlphabetBar.cs" />
     <Compile Include="Assets/MediaPipeUnity/Tutorial/Tasks/FaceLandmarkerRunner.cs" />
+    <Compile Include="Assets/EnvironmentArt/ForestGlade/Scripts/ForestGladeBackground.cs" />
     <Compile Include="Assets/Scripts/GlyphRain.cs" />
     <Compile Include="Assets/Scripts/B2/B2Table.cs" />
     <Compile Include="Assets/Scripts/B1/B1EventScheduler.cs" />
     <Compile Include="Assets/Scripts/EdgeHitGlow.cs" />
     <Compile Include="Assets/Scripts/Dino/DinoAgent.cs" />
+    <Compile Include="Assets/DinoModel/Scripts/DinoTaskVisual.cs" />
     <Compile Include="Assets/Scripts/B1/DinoAgentB1.cs" />
     <Compile Include="Assets/Scripts/B1/B1Text.cs" />
     <Compile Include="Assets/Scripts/Dino/WateringCan.cs" />
@@ -93,6 +95,8 @@
     <None Include="Assets/TextMesh Pro/Shaders/TMP_SDF-Mobile Overlay.shader" />
     <None Include="Assets/TextMesh Pro/Shaders/TMP_SDF-Mobile-2-Pass.shader" />
     <None Include="Assets/TextMesh Pro/Shaders/TMP_Bitmap.shader" />
+    <None Include="Assets/DinoModel/Shaders/DinoModel2D.shader" />
+    <None Include="Assets/EnvironmentArt/ForestGlade/Shaders/ForestLayer.shader" />
     <None Include="Assets/MediaPipeUnity/Tutorial/Custom Graph/face_mesh_desktop_live.txt" />
     <None Include="Assets/StreamingAssets/handedness.txt" />
     <None Include="Assets/TextMesh Pro/Shaders/TMPro_Mobile.cginc" />
