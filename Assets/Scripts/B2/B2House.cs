@@ -1,4 +1,4 @@
-// 恐龙之家：B2 用四根圆木搭建，旧玩法仍可用 AddRoom 生成字符画房间。
+// 恐龙之家：B2 按六种材料分阶段搭建 A-frame 木屋；AddRoom 保留旧房间流程。
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -32,9 +32,11 @@ public class B2House : MonoBehaviour
     private B1LayerConfig _world;
     private Vector3 _origin; // 首间房中心
     private bool _inited;
-    internal const int WoodStepsRequired = 4;
+    internal const int WoodStepsRequired = AFrameBuildPlan.StageCount;
     public int WoodStepsBuilt { get; private set; }
     private Room _woodHouse;
+    private AFrameHouseVisual _aFrame;
+    public string NextConstructionWord => AFrameBuildPlan.WordAt(WoodStepsBuilt);
 
     public IReadOnlyList<Room> Rooms => _rooms;
     public bool CanGrow => _inited && _rooms.Count < maxRooms;
@@ -89,45 +91,24 @@ public class B2House : MonoBehaviour
         return room;
     }
 
-    internal void AddWoodStep(Sprite logSprite)
+    internal bool AddConstructionStep(string word)
     {
-        if (!_inited || WoodStepsBuilt >= WoodStepsRequired) return;
+        if (!_inited || WoodStepsBuilt >= WoodStepsRequired || word != NextConstructionWord) return false;
         if (WoodStepsBuilt == 0)
         {
+            roomW = 3.35f; roomH = 2.75f;
             Vector3 center = new Vector3(_origin.x, _world.upperFloorY + roomH * 0.5f);
             _woodHouse = new Room { material = "WOOD", color = woodColor, center = center };
             _woodHouse.root = CreateRoomRoot(_woodHouse);
+            var visualRoot = new GameObject("AFrame_Construction");
+            visualRoot.transform.SetParent(_woodHouse.root.transform, false);
+            visualRoot.transform.localPosition = Vector3.down * (roomH * 0.5f);
+            _aFrame = visualRoot.AddComponent<AFrameHouseVisual>();
         }
-
-        PlaceWoodBeam(logSprite);
         WoodStepsBuilt++;
+        _aFrame.ShowStage(WoodStepsBuilt);
         if (WoodStepsBuilt == WoodStepsRequired) CompleteRoom(_woodHouse);
-    }
-
-    private void PlaceWoodBeam(Sprite sprite)
-    {
-        const float thickness = 0.32f;
-        float postX = roomW * 0.5f - thickness * 0.85f;
-        float capY = (roomH - thickness) * 0.5f;
-        var (name, center, upright) = WoodStepsBuilt switch
-        {
-            0 => ("Wood Floor", new Vector2(0f, -capY), false),
-            1 => ("Wood Left Post", new Vector2(-postX, 0f), true),
-            2 => ("Wood Right Post", new Vector2(postX, 0f), true),
-            _ => ("Wood Roof", new Vector2(0f, capY), false),
-        };
-
-        var beam = new GameObject(name).AddComponent<SpriteRenderer>();
-        beam.sprite = sprite;
-        beam.sortingOrder = upright ? 0 : 1;
-        beam.transform.SetParent(_woodHouse.root.transform, false);
-        var rotation = Quaternion.Euler(0f, 0f, upright ? 90f : 0f);
-        beam.transform.localRotation = rotation;
-        // Mini Meadow's log uses the bottom seven pixel rows and a bottom pivot.
-        float length = upright ? roomH - thickness : roomW;
-        beam.transform.localScale = new Vector3(length * sprite.pixelsPerUnit / sprite.rect.width,
-            thickness * sprite.pixelsPerUnit / 7f, 1f);
-        beam.transform.localPosition = (Vector3)center - rotation * (Vector3.up * (thickness * 0.5f));
+        return true;
     }
 
     private void CompleteRoom(Room room)
@@ -171,6 +152,7 @@ public class B2House : MonoBehaviour
         if (room == _woodHouse)
         {
             _woodHouse = null;
+            _aFrame = null;
             WoodStepsBuilt = 0;
         }
     }

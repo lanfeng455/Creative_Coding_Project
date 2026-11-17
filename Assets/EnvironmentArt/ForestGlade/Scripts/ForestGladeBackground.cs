@@ -19,18 +19,22 @@ public sealed class ForestGladeBackground : MonoBehaviour
     [SerializeField] private Vector3 referencePosition;
     [SerializeField, Min(0.1f)] private float response = 2.5f;
     [SerializeField, Range(0.6f, 0.9f)] private float groundLineFromTop = 0.755f;
-    [Tooltip("Visible ground rim below the standing surface, in world units.")]
-    [SerializeField, Range(0f, 0.2f)] private float groundEdgeThickness = 0.06f;
+    [Tooltip("The lower separator. Soil stops at its top edge, leaving the area below it clear.")]
+    [SerializeField] private SpriteRenderer groundBottomBoundary;
+    [Tooltip("Soil thickness in world units when no lower separator is assigned.")]
+    [SerializeField, Range(0f, 1.5f)] private float groundEdgeThickness = 0.54f;
     private Vector2 smoothedOffset;
     private MaterialPropertyBlock properties;
     private static readonly int Scroll = Shader.PropertyToID("_Scroll");
     private static readonly int ClipRect = Shader.PropertyToID("_ClipRect");
 
-    public void Configure(B1LayerConfig configuration, Transform target, Layer[] backgroundLayers)
+    public void Configure(B1LayerConfig configuration, Transform target, Layer[] backgroundLayers,
+        SpriteRenderer bottomBoundary = null)
     {
         world = configuration;
         subject = target;
         layers = backgroundLayers;
+        groundBottomBoundary = bottomBoundary;
         referencePosition = target != null ? target.position : Vector3.zero;
         smoothedOffset = Vector2.zero;
         UpdateParallax(0f);
@@ -57,6 +61,10 @@ public sealed class ForestGladeBackground : MonoBehaviour
         float height = (top - world.upperFloorY) / groundLineFromTop;
         if (height <= 0f) return;
         float bottom = top - height;
+        float visibleBottom = groundBottomBoundary != null
+            ? groundBottomBoundary.bounds.max.y
+            : world.upperFloorY - groundEdgeThickness;
+        visibleBottom = Mathf.Clamp(visibleBottom, bottom, world.upperFloorY);
         Vector2 target = Vector2.zero;
         if (subject != null)
         {
@@ -84,7 +92,7 @@ public sealed class ForestGladeBackground : MonoBehaviour
             sprite.sortingOrder = 0;
             float right = i == 3 ? world.upperFloorXMax : world.boundsXMax;
             properties.SetVector(ClipRect, new Vector4(world.boundsXMin,
-                Mathf.Max(bottom, world.upperFloorY - groundEdgeThickness), right, top));
+                visibleBottom, right, top));
             properties.SetVector(Scroll, new Vector4(smoothedOffset.x * layer.maximumUvOffset.x,
                 smoothedOffset.y * layer.maximumUvOffset.y, 0f, 0f));
             sprite.SetPropertyBlock(properties);

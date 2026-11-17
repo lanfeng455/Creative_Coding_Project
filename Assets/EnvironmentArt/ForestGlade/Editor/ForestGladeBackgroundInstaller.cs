@@ -57,7 +57,8 @@ public static class ForestGladeBackgroundInstaller
             renderer.sharedMaterial = material;
             layers[i] = new ForestGladeBackground.Layer { renderer = renderer, maximumUvOffset = offsets[i] };
         }
-        background.Configure(world, dino.transform, layers);
+        var bottomBoundary = GameObject.Find("B2_UpperFloor (2)")?.GetComponent<SpriteRenderer>();
+        background.Configure(world, dino.transform, layers, bottomBoundary);
         EditorUtility.SetDirty(background);
         EditorSceneManager.MarkSceneDirty(background.gameObject.scene);
         AssetDatabase.SaveAssets();

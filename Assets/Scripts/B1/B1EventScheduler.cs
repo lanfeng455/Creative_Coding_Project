@@ -23,6 +23,8 @@ public class B1EventScheduler : MonoBehaviour
     [Tooltip("需求期间，无关字母被跳过的概率（无关字母减少到偶发）")]
     [Range(0f, 1f)] public float unrelatedSkipChance = 0.55f;
     private float _letterAcc;
+    private string _letterFocus;
+    private int _focusLetterIndex, _focusAttempts;
 
     [Header("红色威胁")]
     public float threatFirstDelay = 45f;
@@ -66,12 +68,18 @@ public class B1EventScheduler : MonoBehaviour
 
             // 动态难度：当前焦点词 = 火灾时 WATER，其次恐龙需求（WOOD/STONE/BALL）
             string focus = FireHazard.ActiveFire != null ? "WATER"
-                         : dino != null ? dino.CurrentNeed : null;
+                         : dino != null ? dino.RequestedWord : null;
+            if (focus != _letterFocus)
+            {
+                _letterFocus = focus;
+                _focusLetterIndex = _focusAttempts = 0;
+            }
 
             char c;
-            if (focus != null && Random.value < needLetterChance)
+            if (!string.IsNullOrEmpty(focus) && (_focusAttempts++ % 3 == 0 || Random.value < needLetterChance))
             {
-                c = focus[Random.Range(0, focus.Length)];      // 需求字母：高频
+                // Cycle every character, including repetitions (GLASS), rather than starving a needed letter.
+                c = focus[_focusLetterIndex++ % focus.Length];
             }
             else if (focus != null && Random.value < unrelatedSkipChance)
             {

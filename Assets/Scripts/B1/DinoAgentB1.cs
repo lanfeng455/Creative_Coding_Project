@@ -23,7 +23,7 @@ public class DinoAgentB1 : MonoBehaviour
     public Vector2 needIntervalRange = new Vector2(7f, 13f);
     [Tooltip("房子没建满时，要球（而非建材）的概率——仅当场上完全没球")]
     [Range(0f, 1f)] public float ballNeedChance = 0.3f;
-    /// <summary>当前需求："WOOD"/"STONE"/"BALL"/null。调度器用它加权字符雨。</summary>
+    /// <summary>当前需求：六阶段建材 / BALL / null。火灾的 WATER 仍有最高优先级。</summary>
     public string CurrentNeed { get; private set; }
 
     public string RequestedWord
@@ -33,7 +33,7 @@ public class DinoAgentB1 : MonoBehaviour
             if (FireHazard.ActiveFire != null)
                 return B1Water.WaterInFlight() ? null : "WATER";
             if (_state == State.Fleeing) return null;
-            if (NeedsWoodHouse) return CanOrderConstructionLog() ? "WOOD" : null;
+            if (NeedsWoodHouse) return CanOrderConstructionLog() ? _house.NextConstructionWord : null;
             return CurrentNeed;
         }
     }
@@ -49,15 +49,16 @@ public class DinoAgentB1 : MonoBehaviour
 
     private bool CanOrderConstructionLog()
     {
-        int reserved = _house.WoodStepsBuilt + (_carriedLog != null ? 1 : 0);
+        if (_carriedLog != null) return false;
         foreach (var resource in B1Resource.All)
-        {
             if (resource != null && resource.Alive && resource.IsConstructionLog &&
                 resource.gameObject.scene == gameObject.scene)
-                reserved++;
-        }
-        return reserved < B2House.WoodStepsRequired;
+                return false;
+        return NeedsWoodHouse;
     }
+
+    internal bool IsConstructionRequest(string word)
+        => NeedsWoodHouse && word == _house.NextConstructionWord && CanOrderConstructionLog();
 
     [Header("移动参数")]
     public float walkSpeed = 2.2f;
@@ -140,7 +141,7 @@ public class DinoAgentB1 : MonoBehaviour
         }
 
         // —— 需求计时：无火灾、当前无需求、不在搬建材/盖房时倒数 ——
-        if (NeedsWoodHouse) CurrentNeed = "WOOD";
+        if (NeedsWoodHouse) CurrentNeed = _house.NextConstructionWord;
         else if (fire == null && CurrentNeed == null
             && _state != State.Collecting && _state != State.Building && _state != State.Fleeing)
         {
@@ -158,7 +159,9 @@ public class DinoAgentB1 : MonoBehaviour
         if (NeedsWoodHouse && fire == null && _state != State.Fleeing &&
             _state != State.Collecting && _state != State.Building)
         {
-            _targetRes = B1Resource.NearestOnUpper(transform.position, 100f, B1Resource.Kind.Wood);
+            _targetRes = B1Resource.NearestOnUpper(transform.position, 100f,
+                _house.NextConstructionWord == "STONE" ? B1Resource.Kind.Stone : B1Resource.Kind.Wood,
+                _house.NextConstructionWord);
             if (_targetRes != null) _state = State.Collecting;
         }
 
@@ -210,7 +213,7 @@ public class DinoAgentB1 : MonoBehaviour
         _desiredX = _targetRes.transform.position.x;
         if (Mathf.Abs(transform.position.x - _desiredX) < 0.55f)
         {
-            _carrying = _targetRes.kind == B1Resource.Kind.Wood ? "WOOD" : "STONE";
+            _carrying = _targetRes.ConstructionWord ?? (_targetRes.kind == B1Resource.Kind.Wood ? "WOOD" : "STONE");
             if (_targetRes.IsConstructionLog)
             {
                 _carriedLog = _targetRes;
@@ -233,11 +236,11 @@ public class DinoAgentB1 : MonoBehaviour
         {
             Face(1);
             _buildTimer += dt;
-            if (_carriedLog != null || _buildTimer >= 1.1f)
+            if (_buildTimer >= 1.1f)
             {
                 if (_carriedLog != null)
                 {
-                    _house.AddWoodStep(constructionLogSprite);
+                    _house.AddConstructionStep(_carrying);
                     Destroy(_carriedLog.gameObject);
                     _carriedLog = null;
                     if (!NeedsWoodHouse) CurrentNeed = null;

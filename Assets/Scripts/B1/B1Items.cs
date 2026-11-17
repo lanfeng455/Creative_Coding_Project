@@ -278,15 +278,25 @@ public class B1Resource : B1Item
     public Color MatColor => kind == Kind.Wood ? woodColor : stoneColor;
     public bool IsConstructionLog => _constructionSprite != null;
     private Sprite _constructionSprite;
+    public string ConstructionWord { get; private set; }
 
     internal void ConfigureConstructionLog(Sprite sprite, B1LayerConfig world)
     {
+        ConstructionWord = "WOOD";
         _constructionSprite = sprite;
         _world = world;
         // The sprite has a bottom pivot, so the visible log rests on the platform.
         _radius = 0f;
         groundBounce = 0f;
         transform.localScale = Vector3.one * 1.5f;
+    }
+
+    internal void ConfigureConstructionMaterial(string word, B1LayerConfig world)
+    {
+        ConfigureConstructionLog(AFrameBuildPlan.Icon(word), world);
+        ConstructionWord = word;
+        kind = word == "STONE" ? Kind.Stone : Kind.Wood;
+        transform.localScale = Vector3.one;
     }
 
     protected override void Awake()
@@ -335,12 +345,13 @@ public class B1Resource : B1Item
     }
 
     /// <summary>上层地板上、指定材质的最近资源（恐龙捡建材用）</summary>
-    public static B1Resource NearestOnUpper(Vector3 pos, float maxDist, Kind kind)
+    public static B1Resource NearestOnUpper(Vector3 pos, float maxDist, Kind kind, string constructionWord = null)
     {
         B1Resource best = null; float bd = maxDist * maxDist;
         foreach (var r in All)
         {
             if (r == null || !r.Alive || r.kind != kind) continue;
+            if (constructionWord != null && r.ConstructionWord != constructionWord) continue;
             if (r._world == null || !r._world.OnUpperFloor(r.transform.position)) continue;
             if (r.IsConstructionLog && (!r.IsResting || r.transform.position.y > r._world.upperFloorY + 0.01f))
                 continue;

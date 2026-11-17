@@ -19,7 +19,7 @@ public class TypeWriterB1 : MonoBehaviour
     public int maxBuffer = 12;
 
     [Header("词库（可扩展：单词 → 物品）")]
-    public string[] words = { "BALL", "CHAIR", "WATER", "WOOD", "STONE" };
+    public string[] words = { "BALL", "CHAIR", "WATER", "WOOD", "STONE", "BEAM", "PLANK", "TILE", "GLASS" };
     [SerializeField, Tooltip("指定恐龙后，只匹配它当前喊出的词，字母顺序不限")]
     private DinoAgentB1 requestSource;
 
@@ -45,7 +45,7 @@ public class TypeWriterB1 : MonoBehaviour
     public string BufferText => new string(_buffer.ToArray());
 
     /// <summary>所有玩法必须能拼出的词（场景里旧组件序列化的 words 可能缺项，这里补齐）</summary>
-    private static readonly string[] RequiredWords = { "BALL", "CHAIR", "WATER", "WOOD", "STONE" };
+    private static readonly string[] RequiredWords = { "BALL", "CHAIR", "WATER", "WOOD", "STONE", "BEAM", "PLANK", "TILE", "GLASS" };
 
     /// <summary>把 RequiredWords 合并进 words（保持原有顺序，只补缺）</summary>
     private void MergeRequiredWords()
@@ -178,6 +178,16 @@ public class TypeWriterB1 : MonoBehaviour
     {
         if (_world == null) return;
         if (word == "WATER" && _world.TryHandleCraftedWater()) return;
+        if (requestSource != null && requestSource.IsConstructionRequest(word))
+        {
+            var delivery = new GameObject("Construction_" + word);
+            delivery.AddComponent<SpriteRenderer>();
+            delivery.transform.position = new Vector3(Mathf.Clamp(-3.2f,
+                _world.upperFloorXMin + 1f, _world.GapXMin - 1f), _world.upperCeilingY + 0.65f);
+            delivery.AddComponent<B1Resource>().ConfigureConstructionMaterial(word, _world);
+            AudioManager.PlayAt(Sfx.NestComplete, delivery.transform.position);
+            return;
+        }
         var pos = spawnAnchor + new Vector3(Random.Range(-0.3f, 0.3f), 2.5f, 0f);
         Sprite logSprite = word == "WOOD" && requestSource != null ? requestSource.ConstructionLogSprite : null;
         if (logSprite != null)
@@ -203,6 +213,8 @@ public class TypeWriterB1 : MonoBehaviour
                 if (logSprite != null) wood.ConfigureConstructionLog(logSprite, _world);
                 break;
             case "STONE": go.AddComponent<B1Resource>().kind = B1Resource.Kind.Stone; break;
+            case "BEAM": case "PLANK": case "TILE": case "GLASS":
+                go.AddComponent<B1Resource>().ConfigureConstructionMaterial(word, _world); break;
             default: Destroy(go); return;
         }
 

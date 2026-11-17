@@ -2779,7 +2779,8 @@ MonoBehaviour:
   referencePosition: {x: -5.5, y: 1.6, z: 0}
   response: 2.5
   groundLineFromTop: 0.755
-  groundEdgeThickness: 0.06
+  groundBottomBoundary: {fileID: 805240994}
+  groundEdgeThickness: 0.54
 --- !u!4 &1827126691
 Transform:
   m_ObjectHideFlags: 0
@@ -3780,6 +3781,65 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 8571076842648159877}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1946001000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1946001001}
+  - component: {fileID: 1946001002}
+  m_Layer: 0
+  m_Name: CyberControl_Visuals
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1946001001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1946001000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1946001002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1946001000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74c079e1a5bd438ea2951a3fc937c9c3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CyberControlVisual
+  world: {fileID: 1235745678}
+  upperBoundary: {fileID: 805240994}
+  band: {fileID: 2116277014}
+  writer: {fileID: 1999578282}
+  material: {fileID: 2100000, guid: ba486e2b36474471b124f02dcad3b438, type: 2}
+  background: {r: 0.031, g: 0.059, b: 0.098, a: 1}
+  streamColor: {r: 0.137, g: 0.396, b: 0.467, a: 1}
+  cyan: {r: 0.443, g: 0.910, b: 0.949, a: 1}
+  amber: {r: 1, g: 0.780, b: 0.475, a: 1}
+  columns: 28
+  streamOpacity: 0.14
+  streamSpeed: 0.55
+  frameOpacity: 0.42
+  selectionFeedback: 1
+  recordingDust: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -3805,3 +3865,4 @@ SceneRoots:
   - {fileID: 2094318126}
   - {fileID: 966732031}
   - {fileID: 1827126691}
+  - {fileID: 1946001001}
