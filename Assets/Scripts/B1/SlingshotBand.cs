@@ -53,6 +53,7 @@ public class SlingshotBand : MonoBehaviour
     private readonly Vector2[] _pts = new Vector2[4];   // PIP_A, TIP_A, TIP_B, PIP_B
     private int _ptCount;                               // 4=双手，2=单手
     private bool _valid;
+    private bool _tipsInLowerLayer = true;   // 指尖是否都在下层（上层=不弹）
     private Vector2 _midVel, _midAccel;
     private readonly Queue<(float t, Vector2 p)> _history = new();
 
@@ -99,6 +100,10 @@ public class SlingshotBand : MonoBehaviour
         UpdateVisuals();
 
         if (!_valid) { _itemCd.Clear(); return; }
+
+        // 有指尖跑到上层（分界线以上）→ 整条带不参与弹射。
+        // 否则伸手去打字机删字时，手往上抬会被当成"甩腕"，把路过的字母打成导弹。
+        if (!_tipsInLowerLayer) return;
 
         var keys = new List<Object>(_itemCd.Keys);
         foreach (var k in keys) { _itemCd[k] -= dt; if (_itemCd[k] <= 0f) _itemCd.Remove(k); }
@@ -171,6 +176,15 @@ public class SlingshotBand : MonoBehaviour
         for (int i = 0; i < 4; i++)
             if (_dots[i] != null) _dots[i].enabled = _valid && i < _ptCount;
         if (!_valid) { _history.Clear(); return; }
+
+        // 指尖是否都在下层（四点是索引 1、2；单手是索引 1）
+        _tipsInLowerLayer = true;
+        if (world != null)
+        {
+            float div = world.upperFloorY;
+            if (_ptCount >= 4) _tipsInLowerLayer = _pts[1].y < div && _pts[2].y < div;
+            else if (_ptCount >= 2) _tipsInLowerLayer = _pts[1].y < div;
+        }
 
         // —— 折线中心的历史 → 速度与加速度 ——
         float now = Time.time;
@@ -252,7 +266,7 @@ public class SlingshotBand : MonoBehaviour
         // 方向以正上方为主，手的横向速度只给一点偏转
         Vector2 dir = new Vector2(_midVel.x * 0.35f, 1f).normalized;
         apply(dir * speed);
-        AudioManager.PlayAt(Sfx.BallKick, pos);
+        AudioManager.PlayAt(Sfx.LetterFling, pos);
         return true;
     }
 

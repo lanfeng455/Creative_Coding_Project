@@ -4,7 +4,7 @@
 
 房屋采用适配当前固定正交镜头的 2.5D 网格分层；六层几何和材质集中于 Assets/HouseModel/AFrame，不依赖外部模型下载。轮廓参考用户选择的三角小屋，部件拆分参考 Rural Cabin Exterior 的墙面／屋顶／地基／装饰分类；没有导入第三方模型或贴图。
 
-AFrameBuildPlan 负责材料顺序与材料图标；AFrameHouseVisual 负责六层网格与安装动画。B2House 负责进度和完工登记。TypeWriterB1 保留原有字母顺序不限的匹配方式与重复字母计数，增加四个词 BEAM、PLANK、TILE、GLASS。B1Resource 保留原有运动学、搬运和落地过程，新增建材词身份。DinoAgentB1 只调整材料需求、收集筛选与安装调用；ApplyMotion、Face、ApplyVisual、PickWanderTarget 保持原样。
+AFrameBuildPlan 负责材料顺序与材料图标；AFrameHouseVisual 负责六层网格与安装动画。B2House 负责进度和完工登记。TypeWriterB1 沿用远端按单词顺序拼写的匹配方式与重复字母计数，增加四个词 BEAM、PLANK、TILE、GLASS。B1Resource 保留原有运动学、搬运和落地过程，新增建材词身份。DinoAgentB1 只调整材料需求、收集筛选与安装调用；ApplyMotion、Face、ApplyVisual、PickWanderTarget 保持原样。
 
 运输期间不继续请求同一阶段的材料。B1EventScheduler 对当前需求词循环提供字母，每三次生成尝试至少有一次提供需求字母，避免纯随机导致长期缺少某个字母；GLASS 中的两个 S 按两个条目参与循环。
 

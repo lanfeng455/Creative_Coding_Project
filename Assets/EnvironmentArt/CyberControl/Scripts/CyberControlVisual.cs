@@ -38,7 +38,6 @@ public sealed class CyberControlVisual : MonoBehaviour
     private readonly System.Random _random = new System.Random(7319);
     private float _flash;
     private Vector2 _entry;
-    private int _lastCount;
     private bool _frameDirty;
 
     private struct Mote
@@ -85,7 +84,6 @@ public sealed class CyberControlVisual : MonoBehaviour
         _clock += dt;
         DrawRain();
         DrawFeedback(dt);
-        if (writer != null) _lastCount = writer.BufferText.Length;
     }
 
     private void BuildFrame()
@@ -192,10 +190,8 @@ public sealed class CyberControlVisual : MonoBehaviour
     private void OnRecorded(Vector3 position, float size)
     {
         if (!recordingDust || writer == null) return;
-        // Add() has already run, and may have consumed a completed word. Retain its last slot.
-        int count = writer.BufferText.Length;
-        int slot = Mathf.Clamp(count > 0 ? count : _lastCount + 1, 1, writer.maxBuffer);
-        _entry = writer.transform.TransformPoint(new Vector3(slot * writer.charSpacing, -0.7f, 0f));
+        // Follow the remote writer's real slot layout, including gaps left by deletion.
+        _entry = writer.LastAddedPosition;
         _flash = 0.35f;
         for (int i = 0; i < 28 && _motes.Count < 192; i++)
         {
@@ -208,7 +204,6 @@ public sealed class CyberControlVisual : MonoBehaviour
                 life = 0.4f + Next() * 0.5f
             });
         }
-        _lastCount = writer.BufferText.Length;
     }
 
     private float Next() => (float)_random.NextDouble();
@@ -236,7 +231,7 @@ public sealed class CyberControlVisual : MonoBehaviour
         _subscribedWorld = null;
         _base?.Dispose(); _rain?.Dispose(); _feedback?.Dispose();
         _base = _rain = _feedback = null;
-        _motes.Clear(); _flash = 0f; _clock = 0f; _lastCount = 0;
+        _motes.Clear(); _flash = 0f; _clock = 0f;
     }
 
     private sealed class Geometry : IDisposable

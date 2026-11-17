@@ -83,7 +83,9 @@ public static class AFrameConstructionCheck
                         throw new Exception("House completion did not register exactly one room.");
                     Capture("game-completed.png", false);
                     if (!_interrupted) throw new Exception("Carrier interruption was not exercised.");
-                    _house.DestroyRoom(_house.Rooms[0]);
+                    var completedRoom = _house.Rooms[0];
+                    for (int hit = 0; hit < Mathf.Max(1, _house.roomHp); hit++)
+                        _house.DestroyRoom(completedRoom);
                     if (_house.WoodStepsBuilt != 0 || _house.NextConstructionWord != "STONE")
                         throw new Exception("Destroyed house did not reset its material plan.");
                     _stage = 0; _rebuilding = true;

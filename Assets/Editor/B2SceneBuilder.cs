@@ -133,11 +133,13 @@ public static class B2SceneBuilder
         var oldRain = GameObject.Find("B2_BackgroundRain");
         if (oldRain != null) Object.DestroyImmediate(oldRain);
 
-        // 专用 World Space Canvas：放在 z=5（世界物体在 z=0），渲染在所有世界物体之后
+        // 专用 World Space Canvas：放在 z=5（世界物体在 z=0），渲染在所有世界物体之后。
+        // 注意 sortingOrder 必须是正数（1）：填 -100 时整个 Canvas 不参与渲染，雨会整片消失。
+        // 1 = 压在地板/边缘线(0)之上、前景字母(2)之下。
         var canvasGo = new GameObject("B2_RainCanvas", typeof(RectTransform), typeof(Canvas));
         var canvas = canvasGo.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.WorldSpace;
-        canvas.sortingOrder = -100;
+        canvas.sortingOrder = 1;
         var canvasRt = canvasGo.GetComponent<RectTransform>();
         canvasRt.sizeDelta = new Vector2(1920f, 1080f);
 
