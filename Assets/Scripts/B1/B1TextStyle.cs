@@ -1,4 +1,6 @@
-// B1Text.cs —— B1 的 TMP 文本基础设施
+// B1TextStyle.cs —— B1 的 TMP 文本基础设施
+// 注意：文件名必须与主 MonoBehaviour 类 B1TextStyle 同名，否则 build 后 player 会报
+//       'B1Text' is missing the class attribute 'ExtensionOfNativeClass'!（文件名 B1Text 对应的是 static 类）
 // ① B1TextStyle：场景实体（Builder 自动创建），统一指定 TMP 字体与材质效果（描边/发光/渐变）。
 //    所有动态字符（字符雨/威胁/火焰/打字机/气泡/碎屑）都从这里取字体 → 你只调一处，全局生效。
 // ② B1Text.Make()：创建世界空间 TextMeshPro 的快捷方法。

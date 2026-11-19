@@ -1560,7 +1560,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1750012793}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1642009811}
+  m_Script: {fileID: 11500000, guid: 2cdb566e372812d45aaec4b3acd0257e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::B1TextStyle
   font: {fileID: 0}
@@ -2422,7 +2422,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2092193252}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1208205770}
+  m_Script: {fileID: 11500000, guid: 2931320fb0bf731438486ac662af4325, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::B1EventScheduler
   world: {fileID: 1544312954}
