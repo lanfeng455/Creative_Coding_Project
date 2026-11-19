@@ -33,9 +33,7 @@ public enum Sfx
     DinoHappy,      // 需求达成 / 房子盖好
 
     // —— 天灾 / 环境 ——
-    FireStart,      // 起火（点火瞬间）
-    FireOut,        // 火被 WATER 浇灭（咝的一声）
-    Ambience,       // 环境底噪（由调用方决定循环与否）
+    Ambience = 18,       // 环境底噪（由调用方决定循环与否）
 
     // —— 建材 / 盖房（B2）——
     WoodDeliver,    // 木头打出后落到上层（建材送达）
@@ -49,7 +47,7 @@ public enum Music
 {
     None = 0,
     Main,       // 日常
-    Tension,    // 火灾 / 威胁
+    Tension,    // 威胁
     Victory,    // 收尾 / 建成
 }
 
@@ -222,7 +220,7 @@ public class AudioManager : MonoBehaviour
     public static void Play(Sfx sfx) => PlayAt(sfx, Vector3.zero);
 
     /// <summary>切换背景音乐（按枚举，交叉淡入淡出）。
-    /// 例：AudioManager.PlayMusic(Music.Tension); 火灭后 AudioManager.PlayMusic(Music.Main, 1.5f);</summary>
+    /// 例：AudioManager.PlayMusic(Music.Tension); 恢复日常时 AudioManager.PlayMusic(Music.Main, 1.5f);</summary>
     public static void PlayMusic(Music music, float fade = -1f)
     {
         var mgr = Instance;

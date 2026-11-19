@@ -1,4 +1,4 @@
-// B1Items.cs —— 单词生成的物品：BALL / CHAIR / WATER
+// B1Items.cs —— 单词生成的物品：BALL / CHAIR
 // 共用一套自研运动学（重力/落地反弹/边界反弹/缺口跨层），与字符物理一致，不依赖 Rigidbody。
 // 跨层规则：上层地板只在缺口(GapXMin..GapXMax)处可穿越，其余位置会撞到地板底面弹回。
 // SlingshotBand 通过 Launch() 把下层物品弹向上层。
@@ -196,66 +196,6 @@ public class B1Chair : B1Item
             if (d < bd) { bd = d; best = c; }
         }
         return best;
-    }
-}
-
-// ——————————————————————————————————————
-
-/// <summary>WATER：灭火水滴。下层可被弹起；进入上层后自动飞向火焰，命中灭火。</summary>
-public class B1Water : B1Item
-{
-    public Color waterColor = new Color(0.35f, 0.75f, 1f);
-    [Tooltip("进入上层后朝火焰水平追踪的加速度")]
-    public float homingAccel = 10f;
-
-    private bool _homing;
-
-    protected override void Awake()
-    {
-        base.Awake();
-        _radius = 0.2f;
-        _sr.sprite = B1Visuals.Circle;
-        _sr.color = waterColor;
-        _sr.sortingOrder = 3;
-        transform.localScale = Vector3.one * 0.4f;
-    }
-
-    private void Update()
-    {
-        var fire = FireHazard.ActiveFire;
-
-        // 进入上层 → 开始追踪火焰
-        if (!_homing && _world.OnUpperFloor(transform.position)) _homing = true;
-        if (_homing && fire != null)
-        {
-            float dir = Mathf.Sign(fire.transform.position.x - transform.position.x);
-            _vel.x += dir * homingAccel * Time.deltaTime;
-            _vel.x = Mathf.Clamp(_vel.x, -7f, 7f);
-        }
-
-        StepPhysics(Time.deltaTime);
-
-        // 命中火焰
-        if (fire != null && Vector2.Distance(transform.position, fire.transform.position) < 0.9f)
-        {
-            fire.Extinguish();
-            B1Visuals.Shatter(transform.position, waterColor, 8);
-            AudioManager.PlayAt(Sfx.RainStart, transform.position);
-            Alive = false;
-            Destroy(gameObject);
-        }
-
-        // 没火可灭又落地：几秒后蒸发（避免下层积水）
-        if (fire == null && IsResting) { _evap += Time.deltaTime; if (_evap > 5f) { Alive = false; Destroy(gameObject); } }
-    }
-    private float _evap;
-
-    /// <summary>场上是否有 WATER 在飞（恐龙气泡逻辑用）</summary>
-    public static bool WaterInFlight()
-    {
-        foreach (var it in _all)
-            if (it is B1Water w && w.Alive) return true;
-        return false;
     }
 }
 

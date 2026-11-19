@@ -4,6 +4,7 @@ Shader "DinoModel/URP2D Model"
     {
         _BaseMap ("Base Color", 2D) = "white" {}
         _BaseColor ("Tint", Color) = (1,1,1,1)
+        [HideInInspector] _PortraitClipPlaneOS ("Portrait clip plane", Vector) = (0,0,0,1)
     }
     SubShader
     {
@@ -23,19 +24,22 @@ Shader "DinoModel/URP2D Model"
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseMap_ST;
                 half4 _BaseColor;
+                float4 _PortraitClipPlaneOS;
             CBUFFER_END
             struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; float2 uv : TEXCOORD0; };
-            struct Varyings { float4 positionCS : SV_POSITION; float3 normalWS : TEXCOORD0; float2 uv : TEXCOORD1; };
+            struct Varyings { float4 positionCS : SV_POSITION; float3 normalWS : TEXCOORD0; float2 uv : TEXCOORD1; float portraitDistance : TEXCOORD2; };
             Varyings Vert(Attributes input)
             {
                 Varyings output;
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                output.portraitDistance = dot(input.positionOS, _PortraitClipPlaneOS);
                 return output;
             }
             half4 Frag(Varyings input) : SV_Target
             {
+                clip(input.portraitDistance);
                 half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor;
                 half light = 0.78h + 0.22h * saturate(dot(normalize(input.normalWS), normalize(float3(-0.4,0.8,-0.6))));
                 color.rgb *= light;

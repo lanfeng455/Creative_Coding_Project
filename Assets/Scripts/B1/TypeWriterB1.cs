@@ -19,7 +19,7 @@ public class TypeWriterB1 : MonoBehaviour
     public int maxBuffer = 12;
 
     [Header("词库（可扩展：单词 → 物品）")]
-    public string[] words = { "BALL", "CHAIR", "WATER", "WOOD", "STONE", "BEAM", "PLANK", "TILE", "GLASS" };
+    public string[] words = { "CHAIR", "WOOD", "STONE", "BEAM", "PLANK", "TILE", "GLASS" };
     [SerializeField, Tooltip("指定恐龙后，只匹配它当前喊出的词，字母顺序不限")]
     private DinoAgentB1 requestSource;
 
@@ -59,18 +59,21 @@ public class TypeWriterB1 : MonoBehaviour
     private TextMeshPro _cursor;
     private TextMeshPro _prompt;
     private string _lastCheckedRequest;
+    private string _lastCheckedBuffer;
 
     public Vector3 LastAddedPosition { get; private set; }
 
     public string BufferText => new string(_buffer.ToArray());
 
     /// <summary>所有玩法必须能拼出的词（场景里旧组件序列化的 words 可能缺项，这里补齐）</summary>
-    private static readonly string[] RequiredWords = { "BALL", "CHAIR", "WATER", "WOOD", "STONE", "BEAM", "PLANK", "TILE", "GLASS" };
+    private static readonly string[] RequiredWords = { "CHAIR", "WOOD", "STONE", "BEAM", "PLANK", "TILE", "GLASS" };
 
     /// <summary>把 RequiredWords 合并进 words（保持原有顺序，只补缺）</summary>
     private void MergeRequiredWords()
     {
         var list = new List<string>(words ?? new string[0]);
+        list.RemoveAll(w => string.Equals(w, "BALL", System.StringComparison.OrdinalIgnoreCase)
+                         || string.Equals(w, "WATER", System.StringComparison.OrdinalIgnoreCase));
         foreach (var w in RequiredWords)
             if (!list.Contains(w)) list.Add(w);
         words = list.ToArray();
@@ -103,9 +106,15 @@ public class TypeWriterB1 : MonoBehaviour
         RefreshVisual(); // 初始空状态也把光标定位到正确位置（否则停在中心上方）
     }
 
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
+    }
+
     /// <summary>弹上来的字符录入</summary>
     public void Add(char c)
     {
+        if (InputClosed) return;
         c = char.ToUpperInvariant(c);
         if (!char.IsLetter(c)) return;
 
@@ -119,45 +128,57 @@ public class TypeWriterB1 : MonoBehaviour
         if (_charMeshes.Count > 0) LastAddedPosition = _charMeshes[_charMeshes.Count - 1].transform.position;
         AudioManager.PlayAt(Sfx.LetterRecord, transform.position);
 
-        // 词库匹配：缓冲区末尾必须按顺序等于该词。
-        // 不看恐龙此刻在喊什么 —— 火灾期间它只喊 WATER，但 BALL/WOOD/STONE
-        // 照样可以合法拼出来堆到上层（火灭后恐龙照样会去用）。
-        foreach (var w in words)
+        CheckWords();
+    }
+
+    /// <summary>按数量扣除已有字母，顺序不限；重复字母必须分别具备。</summary>
+    public static string MissingLetters(string word, string available)
+    {
+        var remaining = new List<char>((available ?? "").ToUpperInvariant());
+        var missing = new System.Text.StringBuilder();
+        foreach (char c in (word ?? "").ToUpperInvariant())
         {
-            if (BufferEndsWith(w))
-            {
-                ConsumeWord(w);
-                break;
-            }
+            int index = remaining.IndexOf(c);
+            if (index >= 0) remaining.RemoveAt(index);
+            else missing.Append(c);
         }
-
-        // 恐龙当前需求单独确认一次（需求可能在字打出来之后才出现，例如火刚烧起来）
-        if (requestSource != null) CheckRequest(bufferChanged: true);
+        return missing.ToString();
     }
 
-    /// <summary>缓冲区末尾 N 个字母是否按顺序等于 word（前面允许多余字母，但要按顺序接在末尾）</summary>
-    private bool BufferEndsWith(string word)
+    private bool HasWord(string word)
     {
-        if (string.IsNullOrEmpty(word) || _buffer.Count < word.Length) return false;
-        int start = _buffer.Count - word.Length;
-        for (int i = 0; i < word.Length; i++)
-            if (_buffer[start + i] != word[i]) return false;
-        return true;
+        return !string.IsNullOrEmpty(word) && _buffer.Count >= word.Length &&
+            MissingLetters(word, BufferText).Length == 0;
     }
 
-    private void CheckRequest(bool bufferChanged = false)
+    private void CheckWords()
     {
-        string word = requestSource.RequestedWord;
-        if (!bufferChanged && word == _lastCheckedRequest) return;
-        _lastCheckedRequest = word;
-        if (_world == null || string.IsNullOrEmpty(word) ||
-            System.Array.IndexOf(words, word) < 0)
+        if (_world == null) return;
+        if (requestSource && requestSource.Homecoming)
+        {
+            var ending = requestSource.Homecoming;
+            if (ending.Choosing && _buffer.Count >= 4)
+            {
+                if (HasWord(PorchHomecoming.Lamp)) ConsumeWord(PorchHomecoming.Lamp);
+                else if (HasWord(PorchHomecoming.Bell)) ConsumeWord(PorchHomecoming.Bell);
+            }
             return;
-
-        // 和词库同一条规则：末尾必须按顺序拼出该词，不认"散着凑齐字母"
-        if (!BufferEndsWith(word)) return;
-
-        ConsumeWord(word);
+        }
+        var encounter = requestSource != null ? requestSource.ActiveEncounter : null;
+        string word = requestSource != null ? requestSource.RequestedWord : null;
+        string buffer = BufferText;
+        if (word == _lastCheckedRequest && buffer == _lastCheckedBuffer) return;
+        _lastCheckedRequest = word;
+        _lastCheckedBuffer = buffer;
+        // 当前需求优先，避免其他词抢走它需要的字母。
+        if (encounter)
+        {
+            if (HasWord(word)) ConsumeWord(word);
+        }
+        else if (System.Array.IndexOf(words, word) >= 0 && HasWord(word)) ConsumeWord(word);
+        else foreach (string candidate in words)
+            if (HasWord(candidate)) { ConsumeWord(candidate); break; }
+        _lastCheckedBuffer = BufferText;
     }
 
     public void Undo()
@@ -189,9 +210,9 @@ public class TypeWriterB1 : MonoBehaviour
     /// <summary>命中单词：吃掉对应字母 + 生成物品</summary>
     private void ConsumeWord(string w)
     {
-        // 移除缓冲区末尾 len 个字母
-        for (int i = 0; i < w.Length && _buffer.Count > 0; i++)
-            RemoveLetterAt(_buffer.Count - 1);
+        // 只消费命中词需要的字母，保留其他字母及其相对顺序。
+        foreach (char c in w)
+            RemoveLetterAt(_buffer.IndexOf(c));
         SpawnItem(w);
         RefreshVisual();
     }
@@ -200,8 +221,17 @@ public class TypeWriterB1 : MonoBehaviour
     private void SpawnItem(string word)
     {
         if (_world == null) return;
-        if (word == "WATER" && _world.TryHandleCraftedWater()) return;
-        if (requestSource != null && requestSource.IsConstructionRequest(word))
+        if (requestSource && requestSource.Homecoming)
+        {
+            requestSource.Homecoming.Choose(word);
+            return;
+        }
+        if (requestSource && requestSource.ActiveEncounter && word == requestSource.ActiveEncounter.Request)
+        {
+            requestSource.ActiveEncounter.LaunchCounter();
+            return;
+        }
+        if (requestSource != null && requestSource.UsesConstructionPlan && AFrameBuildPlan.IsMaterial(word))
         {
             var delivery = new GameObject("Construction_" + word);
             delivery.AddComponent<SpriteRenderer>();
@@ -228,9 +258,7 @@ public class TypeWriterB1 : MonoBehaviour
 
         switch (word)
         {
-            case "BALL": go.AddComponent<B1Ball>(); break;
             case "CHAIR": go.AddComponent<B1Chair>(); break;
-            case "WATER": go.AddComponent<B1Water>(); break;
             case "WOOD":
                 var wood = go.AddComponent<B1Resource>();
                 wood.kind = B1Resource.Kind.Wood;
@@ -298,13 +326,18 @@ public class TypeWriterB1 : MonoBehaviour
         if (_cursor != null) _cursor.gameObject.SetActive(Mathf.FloorToInt(_cursorBlink * 2f) % 2 == 0);
     }
 
+    private bool InputClosed => requestSource &&
+        ((requestSource.ActiveEncounter && requestSource.ActiveEncounter.IsGameOver) ||
+         (requestSource.Homecoming && !requestSource.Homecoming.Choosing));
+
     private void Update()
     {
+        if (InputClosed) return;
         if (Input.GetKeyDown(KeyCode.Backspace)) Undo();
         if (Input.GetKeyDown(KeyCode.Escape)) Clear();
-        if (requestSource != null) CheckRequest();
         UpdateCursorBlink();
         UpdateFingertipDelete();
+        CheckWords();
     }
 
     /// <summary>指尖落到哪个字母的格子上就删哪个（不再固定删末尾）。

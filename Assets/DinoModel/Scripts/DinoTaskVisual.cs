@@ -10,6 +10,8 @@ public sealed class DinoTaskVisual : MonoBehaviour
     [SerializeField] private float turnSpeed = 540f;
     [SerializeField] private float frontYaw = 145f;
 
+    internal MeshFilter CharacterMesh => modelPivot ? modelPivot.GetComponentInChildren<MeshFilter>(true) : null;
+
     private DinoAgentB1 agent;
     private Renderer[] modelRenderers;
     private MaterialPropertyBlock properties;
@@ -93,6 +95,14 @@ public sealed class DinoTaskVisual : MonoBehaviour
                 yaw = facing * 90f;
                 lean = -14f;
                 break;
+        }
+
+        var encounter = agent.ActiveEncounter;
+        if ((encounter is FireEncounter || encounter is SeedEncounter) && !encounter.IsGameOver)
+        {
+            yaw = encounter.transform.position.x >= transform.position.x ? 90f : -90f;
+            lean = 0f;
+            height = 1f;
         }
 
         // Bend relative to the character's own forward direction, not world axes.

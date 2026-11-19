@@ -42,6 +42,7 @@ public class B2House : MonoBehaviour
     public int WoodStepsBuilt { get; private set; }
     private Room _woodHouse;
     private AFrameHouseVisual _aFrame;
+    internal AFrameHouseVisual Cottage => _aFrame;
     public string NextConstructionWord => AFrameBuildPlan.WordAt(WoodStepsBuilt);
 
     public IReadOnlyList<Room> Rooms => _rooms;

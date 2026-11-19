@@ -4,7 +4,7 @@
 //       只剥离旧玩法组件（AlphabetBar+GlyphRain/LetterPlant 体系/ThreatSystem/EcoEventScheduler/CorruptionZone/BouncingBall），
 //       再按任务书在原场景上叠加新玩法：
 //         双层世界(B1LayerConfig) + 双层字符雨（B2BackgroundRain 远景 + PhysicsLetter 前景 A-Z）
-//         + 双食指弹力带(SlingshotBand) + 打字机(TypeWriterB1) + 恐龙(DinoAgentB1)+巢(B2Nest) + 威胁/火灾(ThreatB1)。
+//         + 双食指弹力带(SlingshotBand) + 打字机(TypeWriterB1) + 恐龙(DinoAgentB1)+巢(B2Nest) 。
 // 所有管理器与视觉物都是场景真实物体，Inspector 可调；动态实体（字符/物品/威胁）运行时生成。
 
 using UnityEditor;
@@ -43,14 +43,13 @@ public static class B2SceneBuilder
         EnsureBand(world, provider);
         EnsureTypeWriter(world);
         EnsureScheduler(world);
-        EnsureTable(world);
         EnsureDino(world);
         FrameCamera(world);
 
         EditorSceneManager.SaveScene(scene);
         Selection.activeGameObject = world.gameObject;
         Debug.Log("[B2] TemplateB2 搭建完成：保留 TemplateB 架构（dino/巢/边缘线/MediaPipe/Volume），" +
-                  "叠加 双层世界 / 背景字符雨 / 前景A-Z字符雨(带拖尾) / 弹力带 / 打字机 / 恐龙 / 威胁 / 火灾。");
+                  "叠加 双层世界 / 背景字符雨 / 前景A-Z字符雨(带拖尾) / 弹力带 / 打字机 / 恐龙。");
     }
 
     /// <summary>移除旧玩法组件，保留场景骨架与视觉资产（TemplateB 原场景不受影响）</summary>
@@ -224,7 +223,7 @@ public static class B2SceneBuilder
 
         // 词库必须在这里显式赋值：场景里旧组件会把 words 序列化住，
         // 改代码里的字段初值不会生效（WOOD/STONE 曾因此永远匹配不到）。
-        tw.words = new[] { "BALL", "CHAIR", "WATER", "WOOD", "STONE" };
+        tw.words = new[] { "CHAIR", "WOOD", "STONE" };
 
         var oldTm = go.GetComponent<TextMesh>();
         if (oldTm != null) Object.DestroyImmediate(oldTm);
@@ -255,7 +254,7 @@ public static class B2SceneBuilder
         EditorUtility.SetDirty(tw);
     }
 
-    /// <summary>事件调度器：前景 A-Z 字符雨（更大/更慢/更稀疏/带拖尾）+ 红色威胁 + 火灾</summary>
+    /// <summary>事件调度器：前景 A-Z 字符雨（更大/更慢/更稀疏/带拖尾）</summary>
     private static void EnsureScheduler(B1LayerConfig world)
     {
         var go = GameObject.Find("B2_Scheduler");
@@ -271,11 +270,6 @@ public static class B2SceneBuilder
         s.maxLiveLetters = 20;
         s.letterFallSpeed = 0.8f;
 
-        // 灾害节奏：先留足时间让玩家学会拼词/盖房，再出事
-        s.threatFirstDelay = 45f;
-        s.threatIntervalRange = new Vector2(40f, 60f);
-        s.fireFirstDelay = 120f;
-        s.fireIntervalRange = new Vector2(100f, 160f);
         EditorUtility.SetDirty(s);
         Debug.Log($"[B2] 调度器 B2_Scheduler: 组件{(added ? "新建" : "已存在")}, enabled={s.enabled}, active={go.activeSelf}");
     }

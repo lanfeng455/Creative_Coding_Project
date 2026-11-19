@@ -1,6 +1,5 @@
 // ThreatB1.cs —— B1 危机系统（上层恐龙世界）
 // ① RedThreatGlyph：从上层天花板出现，追踪恐龙，命中 → 恐龙受惊（不会死）+ 字符碎裂
-// ② FireHazard：上层随机起火，恐龙逃离并头顶 WATER! 求救；WATER 物品命中 → 灭火
 // ③ B1EventScheduler 已拆到独立文件 B1EventScheduler.cs
 
 using System.Collections.Generic;
@@ -99,79 +98,6 @@ public class RedThreatGlyph : MonoBehaviour
     {
         B1Burst.Shatter(transform.position, color, 6, 4f);
         if (hit) AudioManager.PlayAt(Sfx.ThreatHit, transform.position);
-        Destroy(gameObject);
-    }
-}
-
-/// <summary>火灾（上层）。场上最多一场（ActiveFire）。</summary>
-public class FireHazard : MonoBehaviour
-{
-    public static FireHazard ActiveFire { get; private set; }
-
-    [Header("参数")]
-    public Color fireColor = new Color(1f, 0.55f, 0.15f);
-    public float flickerSpeed = 9f;
-
-    private TextMeshPro _tmp;
-    private float _t;
-    private B1LayerConfig _world;
-
-    private void Awake()
-    {
-        _tmp = B1Text.Make("Fire", transform, 5.5f, fireColor, 3);
-        _tmp.text = "F"; // 火苗形态：字符语义，F=FIRE
-    }
-
-    public void Init(B1LayerConfig world)
-    {
-        _world = world;
-        // 上层地板随机位置（避开缺口）
-        float x = Random.Range(world.upperFloorXMin + 1.5f, world.GapXMin - 1.5f);
-        transform.position = new Vector3(x, world.upperFloorY + 0.4f, 0f);
-        ActiveFire = this;
-        AudioManager.PlayAt(Sfx.FireStart, transform.position);
-        AudioManager.PlayMusic(Music.Tension, 1.2f);
-    }
-
-    private void OnDestroy()
-    {
-        if (!Application.isPlaying) return;
-        if (ActiveFire != this) return;   // 不是当前这场火（场景卸载/已被替换）→ 不做收尾
-        // 统一在这里收尾：不管是谁把火删掉的（FireHazard.Extinguish、
-        // B2FireWaterEncounter 的 Destroy(fire.gameObject)、还是别的手段），
-        // 都保证 火光/音效/速度/音乐 一定会恢复，不会卡在 Tension。
-        ActiveFire = null;
-        AudioManager.PlayAt(Sfx.FireOut, transform.position);
-        AudioManager.PlayMusic(Music.Main, 1.8f);
-    }
-
-    private void Update()
-    {
-        _t += Time.deltaTime;
-        // 火苗抖动 + 呼吸缩放 + 火星字符飞溅（TMP 火星，自管理碎屑）
-        float s = 0.9f + Mathf.Sin(_t * flickerSpeed) * 0.12f + Mathf.Sin(_t * 2.3f) * 0.08f;
-        transform.localScale = Vector3.one * s;
-
-        _sparkAcc += Time.deltaTime * 6f;
-        while (_sparkAcc >= 1f)
-        {
-            _sparkAcc -= 1f;
-            var go = new GameObject("FireSpark");
-            go.transform.position = transform.position + new Vector3(Random.Range(-0.3f, 0.3f), 0f, 0f);
-            var shard = go.AddComponent<B1Shard>();
-            shard.Init(B1Text.RandomLetter(),
-                new Color(1f, Random.Range(0.3f, 0.6f), 0.1f, 1f),
-                Random.Range(1.2f, 2.4f),
-                new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(1.5f, 3f), 0f),
-                Random.Range(-120f, 120f), Random.Range(0.3f, 0.6f), sortOrder: 4);
-        }
-    }
-    private float _sparkAcc;
-
-    /// <summary>WATER 命中 → 灭火（音效与 BGM 收尾统一在 OnDestroy）</summary>
-    public void Extinguish()
-    {
-        B1Burst.Shatter(transform.position, new Color(0.4f, 0.8f, 1f), 10, 5f);
         Destroy(gameObject);
     }
 }
