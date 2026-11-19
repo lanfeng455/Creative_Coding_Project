@@ -96,6 +96,7 @@ public sealed class WindEncounter : ConstructionEncounter
             {
                 CurrentPhase = Phase.Cleared;
                 ReleaseBuilder();
+                AudioManager.PlayMusic(Music.Main, 1.5f);   // 小怪清完回到日常
             }
         }
     }

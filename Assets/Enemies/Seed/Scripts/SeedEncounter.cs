@@ -104,6 +104,7 @@ public sealed class SeedEncounter : ConstructionEncounter
                 {
                     Enter(Phase.Cleared);
                     ReleaseBuilder();
+                    AudioManager.PlayMusic(Music.Main, 1.5f);   // 小怪清完回到日常
                 }
                 break;
         }
