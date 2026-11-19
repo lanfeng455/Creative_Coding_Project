@@ -892,6 +892,9 @@ MonoBehaviour:
   letterColor: {r: 0.92897826, g: 0.9508769, b: 0.9622642, a: 1}
   needLetterChance: 0.75
   unrelatedSkipChance: 0.55
+  voiceFocusSeconds: 5
+  voiceLetterChance: 0.9
+  voiceUnrelatedSkipChance: 0.6
 --- !u!4 &521771836
 Transform:
   m_ObjectHideFlags: 0
@@ -1724,6 +1727,10 @@ MonoBehaviour:
   smoothingAlpha: 0.2
   minDirectionLengthPx: 40
   hitPointAlpha: 0.25
+  trackingGraceSeconds: 0.25
+  predictDuringGrace: 1
+  maxPredictSpeedPx: 3500
+  fastMotionSpeedPx: 2000
   rayVisualEnabled: 1
 --- !u!4 &809319410
 Transform:
@@ -2012,6 +2019,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FireEncounter
   dino: {fileID: 1836402203}
+  attackIntervalSeconds: 8
   character: {fileID: 1401708165}
   cooledMesh: {fileID: 4300000, guid: 5a63608636b26469aa3ae2f9f3043b47, type: 2}
   cooledMaterial: {fileID: 2100000, guid: 0e7fb3bc0d71a4cd2ada4718a25a7279, type: 2}
@@ -2020,7 +2028,6 @@ MonoBehaviour:
   flameSheet: {fileID: 2800000, guid: b1b91147dff745f29c5db1209d8db846, type: 3}
   splashSheet: {fileID: 2800000, guid: 51b56d8773d7422dbd1f8a6a3e75974e, type: 3}
   smokeSheet: {fileID: 2800000, guid: 39fef12bc31b848089bd2503c54f8f19, type: 3}
-  attackInterval: 30
 --- !u!4 &998290022
 Transform:
   m_ObjectHideFlags: 0
@@ -2898,6 +2905,12 @@ MonoBehaviour:
   - music: 2
     clip: {fileID: 8300000, guid: a19a55e10a14a9d4b9f1ab225446fdb0, type: 3}
     volume: 0.5
+  - music: 4
+    clip: {fileID: 8300000, guid: 261fb0962e40386419e4b5e3c7ae3508, type: 3}
+    volume: 0.8
+  - music: 3
+    clip: {fileID: 8300000, guid: 55d7d163ffede004cb298042078fa334, type: 3}
+    volume: 0.5
   musicVolume: 0.7
   musicCrossFade: 0.8
   ambienceVolume: 0.5
@@ -3185,13 +3198,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SeedEncounter
   dino: {fileID: 1836402203}
+  attackIntervalSeconds: 8
   pod: {fileID: 1885762474}
   thorn: {fileID: 1175575385}
   sporesSheet: {fileID: 2800000, guid: 41957e0ec28848729ad144f8f287e5e3, type: 3}
   leavesSheet: {fileID: 2800000, guid: 1ccd0396c6fc470f9134c5d9cb97e600, type: 3}
   shieldSheet: {fileID: 2800000, guid: f2929c6be109430fab65d81adfc4625c, type: 3}
   parrySheet: {fileID: 2800000, guid: f27bde1a87894ce5b81563d6a470dd27, type: 3}
-  attackInterval: 30
   shotSpeed: 3
 --- !u!4 &1827112742
 Transform:
@@ -4053,6 +4066,8 @@ MonoBehaviour:
   stillBandSpeed: 1.2
   smoothing: 0.45
   velWindow: 0.12
+  debugLog: 0
+  debugLogInterval: 0.5
   bandColor: {r: 1, g: 1, b: 1, a: 0.55}
   bandHotColor: {r: 0.4, g: 1, b: 0.7, a: 0.95}
   lineWidth: 0.045
@@ -4106,12 +4121,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WindEncounter
   dino: {fileID: 1836402203}
+  attackIntervalSeconds: 8
   character: {fileID: 705129455}
   summonSheet: {fileID: 2800000, guid: 773a5caa92d104af686ebce1572a40ca, type: 3}
   tornadoSheet: {fileID: 2800000, guid: 8dfd89ca194be408297b9ef321869cd0, type: 3}
   vortexSheet: {fileID: 2800000, guid: 2fd81d0bff085404b8602b376543d5a5, type: 3}
   smokeSheet: {fileID: 2800000, guid: 39fef12bc31b848089bd2503c54f8f19, type: 3}
-  attackInterval: 10
 --- !u!4 &2128904390
 Transform:
   m_ObjectHideFlags: 0

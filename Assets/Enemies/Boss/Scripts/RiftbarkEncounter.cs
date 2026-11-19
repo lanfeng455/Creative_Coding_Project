@@ -334,6 +334,7 @@ public sealed class RiftbarkEncounter : ConstructionEncounter
         Enter(Phase.Cleared);
         dino.StartHomecoming();
         ReleaseBuilder();
+        AudioManager.PlayMusic(Music.Victory, 1.2f);   // BOSS 击破 → 弦乐收尾（回家阶段沿用，不再切换）
     }
 
     void DrawVortexImpact()

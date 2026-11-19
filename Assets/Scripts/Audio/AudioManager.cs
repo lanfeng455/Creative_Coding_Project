@@ -42,13 +42,14 @@ public enum Sfx
 }
 
 /// <summary>背景音乐槽位。和 Sfx 一样在 Inspector 里拖 clip，代码只引用枚举。
-/// 以后要做"战斗/紧张/胜利"分层，就往这里加一项即可。</summary>
+/// 以后要做"战斗/紧张/胜利"分层，就往这里加一项即可（只能往末尾追加）。</summary>
 public enum Music
 {
     None = 0,
-    Main,       // 日常
-    Tension,    // 威胁
-    Victory,    // 收尾 / 建成
+    Main,       // 日常（爵士风）
+    Tension,    // 小怪战（风/火/种子）
+    Victory,    // BOSS 被击破后的收尾（弦乐）
+    Boss,       // BOSS 战（摇滚）
 }
 
 [Serializable]

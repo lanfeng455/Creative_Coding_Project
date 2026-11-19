@@ -53,7 +53,6 @@
     <Compile Include="Assets\MediaPipeUnity\Editor\BuildProcessor.cs" />
     <Compile Include="Assets\Editor\PrototypeCCacheLibraryWindow.cs" />
     <Compile Include="Assets\HouseModel\AFrame\Editor\UnorderedWordCheck.cs" />
-    <Compile Include="Assets\HouseModel\AFrame\Editor\B2PlayCheckScope.cs" />
     <Compile Include="Assets\Editor\PrototypeCBehaviorPrefabMenu.cs" />
     <Compile Include="Assets\Editor\PrototypeCBallPrefabMenu.cs" />
     <Compile Include="Assets\Editor\LlmParseTestRunner.cs" />
@@ -62,6 +61,7 @@
     <Compile Include="Assets\MediaPipeUnity\Editor\PackageExporter.cs" />
     <Compile Include="Assets\Editor\B2SceneBuilder.cs" />
     <Compile Include="Assets\EnvironmentArt\ForestGlade\Editor\ForestGladeBackgroundInstaller.cs" />
+    <Compile Include="Assets\HouseModel\AFrame\Editor\B2PlayCheckScope.cs" />
     <Compile Include="Assets\Editor\PrototypeCRenderingTool.cs" />
     <Compile Include="Assets\Editor\PrototypeCMountTool.cs" />
     <Compile Include="Assets\Editor\FocusUiBuilder.cs" />

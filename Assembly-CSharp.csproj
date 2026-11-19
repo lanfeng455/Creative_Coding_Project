@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <LangVersion>9.0</LangVersion>
@@ -56,6 +56,7 @@
     <Compile Include="Assets\Scripts\RightHandIndexRayProvider.cs" />
     <Compile Include="Assets\Scripts\C\MeshyConfig.cs" />
     <Compile Include="Assets\Scripts\Eco\BouncingBall.cs" />
+    <Compile Include="Assets\Enemies\Seed\Scripts\SeedEncounter.cs" />
     <Compile Include="Assets\Scripts\C\Layout\RoomLayout.cs" />
     <Compile Include="Assets\ThirdParty\Vosk\SpkModel.cs" />
     <Compile Include="Assets\Scripts\Eco\EcoEventScheduler.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="Assets\Scripts\C\Behaviors\ObjectBehaviorAssembler.cs" />
     <Compile Include="Assets\MediaPipeUnity\Tutorial\Hello World\HelloWorld.cs" />
     <Compile Include="Assets\VFX\PrototypeB2\LetterSpark\B2LetterSpark.cs" />
+    <Compile Include="Assets\Enemies\Wind\Scripts\WindEncounter.cs" />
     <Compile Include="Assets\Scripts\B1\TypeWriterB1.cs" />
     <Compile Include="Assets\Scripts\C\Rendering\ToonMaterialGenerator.cs" />
     <Compile Include="Assets\VFX\PrototypeB2\RoomLanding\B2RoomLanding.cs" />
@@ -78,13 +80,16 @@
     <Compile Include="Assets\Scripts\EdgeHighlightController.cs" />
     <Compile Include="Assets\Scripts\C\Play\TypewriterSendButton.cs" />
     <Compile Include="Assets\ThirdParty\Vosk\VoskPINVOKE.cs" />
+    <Compile Include="Assets\HouseModel\AFrame\Scripts\PorchHomecoming.cs" />
     <Compile Include="Assets\Scripts\C\ObjectModelService.cs" />
     <Compile Include="Assets\Scripts\B2\B2BackgroundRain.cs" />
+    <Compile Include="Assets\Enemies\ConstructionEncounter.cs" />
     <Compile Include="Assets\Scripts\C\Layout\LlmLayoutPrompt.cs" />
     <Compile Include="Assets\Scripts\C\Play\BallFormController.cs" />
     <Compile Include="Assets\Scripts\C\Layout\RoomOccupancy.cs" />
     <Compile Include="Assets\ThirdParty\Vosk\VoskRecognizer.cs" />
     <Compile Include="Assets\Scripts\C\MeshyClient.cs" />
+    <Compile Include="Assets\Enemies\Fire\Scripts\FireEncounter.cs" />
     <Compile Include="Assets\Scripts\C\ObjectSpec.cs" />
     <Compile Include="Assets\Scripts\B1\ThreatB1.cs" />
     <Compile Include="Assets\Scripts\LetterPlant.cs" />
@@ -111,10 +116,12 @@
     <Compile Include="Assets\Scripts\C\PrototypeCSceneBootstrap.cs" />
     <Compile Include="Assets\Scripts\C\PromptStyle.cs" />
     <Compile Include="Assets\Scripts\C\Layout\LayoutSolver.cs" />
+    <Compile Include="Assets\Enemies\Boss\Scripts\RiftbarkEncounter.cs" />
     <Compile Include="Assets\Scripts\C\Voice\VoskVoiceListener.cs" />
     <Compile Include="Assets\Scripts\C\MeshGenerationPlaceholder.cs" />
     <Compile Include="Assets\Scripts\Audio\AudioManager.cs" />
     <Compile Include="Assets\Scripts\C\DinoCController.cs" />
+    <Compile Include="Assets\EnvironmentArt\ForestGlade\Scripts\BossSkyTransition.cs" />
     <Compile Include="Assets\VFX\PrototypeB2\RoomDust\B2RoomDust.cs" />
     <Compile Include="Assets\HouseModel\AFrame\Scripts\AFrameBuildPlan.cs" />
     <Compile Include="Assets\VFX\PrototypeB2\Shared\B2SpriteOneShot.cs" />
@@ -131,8 +138,10 @@
     <Compile Include="Assets\Scripts\GlyphRain.cs" />
     <Compile Include="Assets\Scripts\B2\B2Table.cs" />
     <Compile Include="Assets\Scripts\C\Voice\WhisperVoiceListener.cs" />
+    <Compile Include="Assets\HouseModel\AFrame\Scripts\PorchDetails.cs" />
     <Compile Include="Assets\Scripts\B1\B1EventScheduler.cs" />
     <Compile Include="Assets\Scripts\EdgeHitGlow.cs" />
+    <Compile Include="Assets\Enemies\Wind\Scripts\WindFlipbook.cs" />
     <Compile Include="Assets\Scripts\C\Behaviors\WallTouchWobble.cs" />
     <Compile Include="Assets\Scripts\C\ObjectCache.cs" />
     <Compile Include="Assets\Scripts\C\Llm\ObjectPropertyDictionary.cs" />
@@ -147,17 +156,9 @@
     <Compile Include="Assets\ThirdParty\Whisper\Runtime\Native\WhisperNative.cs" />
     <Compile Include="Assets\Scripts\B1\B1Text.cs" />
     <Compile Include="Assets\Scripts\Dino\WateringCan.cs" />
-    <Compile Include="Assets/Enemies/Seed/Scripts/SeedEncounter.cs" />
-    <Compile Include="Assets/Enemies/Wind/Scripts/WindEncounter.cs" />
-    <Compile Include="Assets/HouseModel/AFrame/Scripts/PorchHomecoming.cs" />
-    <Compile Include="Assets/Enemies/ConstructionEncounter.cs" />
-    <Compile Include="Assets/Enemies/Fire/Scripts/FireEncounter.cs" />
-    <Compile Include="Assets/Enemies/Boss/Scripts/RiftbarkEncounter.cs" />
-    <Compile Include="Assets/EnvironmentArt/ForestGlade/Scripts/BossSkyTransition.cs" />
-    <Compile Include="Assets/HouseModel/AFrame/Scripts/PorchDetails.cs" />
-    <Compile Include="Assets/Enemies/Wind/Scripts/WindFlipbook.cs" />
     <None Include="Packages\com.github.homuler.mediapipe\PackageResources\Shaders\OverlayMask.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
+    <None Include="Assets\Enemies\Wind\VFX\LICENSE.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
     <None Include="Packages\com.github.homuler.mediapipe\package.json" />
     <None Include="Assets\Shaders\PrototypeC_Toon.shader" />
@@ -178,12 +179,14 @@
     <None Include="Packages\com.github.homuler.mediapipe\PackageResources\Shaders\UnmaskShader.shader" />
     <None Include="Assets\StreamingAssets\vosk-model-en-us-0.22-lgraph\graph\phones.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface.shader" />
+    <None Include="Assets\Enemies\Boss\VFX\Rift Portal License.txt" />
     <None Include="Assets\TextMesh Pro\Sprites\EmojiOne Attribution.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Custom-Atlas.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF.shader" />
     <None Include="Assets\StreamingAssets\vosk-model-en-us-0.22-lgraph\graph\words.txt" />
     <None Include="Assets\StreamingAssets\ssdlite_object_detection_labelmap.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile SSD.shader" />
+    <None Include="Assets\Enemies\Wind\Model\WindWisp.shader" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Leading Characters.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Properties.cginc" />
     <None Include="Assets\MediaPipeUnity\Tutorial\Custom Graph\face_mesh_desktop_live_gpu.txt" />
@@ -192,8 +195,8 @@
     <None Include="Packages\com.github.homuler.mediapipe\PackageResources\MediaPipe\handedness.txt" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt" />
     <None Include="Assets\Scripts\EdgeGlow.shader" />
-    <None Include="Assets\PrototypeB2FireWaterVFX\PVFX-LICENSE.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Masking.shader" />
+    <None Include="Assets\Enemies\Boss\Model\Riftbark.shader" />
     <None Include="Assets\HouseModel\AFrame\Shaders\AFrameHouse.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader" />

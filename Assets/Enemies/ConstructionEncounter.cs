@@ -33,6 +33,8 @@ public abstract class ConstructionEncounter : MonoBehaviour
         if (started || step != AfterStep || dino.ActiveEncounter) return;
         started = true;
         dino.ActiveEncounter = this;
+        // 小怪战共用 Tension，BOSS（Riftbark）单独用 Boss
+        AudioManager.PlayMusic(this is RiftbarkEncounter ? Music.Boss : Music.Tension);
         BeginEncounter();
     }
 
