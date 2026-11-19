@@ -31,7 +31,7 @@ public class PhysicsLetter : MonoBehaviour
     private B1LayerConfig _world;
     private Vector2 _vel;
     private TextMeshPro _tmp;     // 世界空间 TMP（与球同款渲染路径，无 UGUI 转换）
-    private bool _dead;
+    private bool _dead, guidedDescent;
     private float _bandCd;
 
     private void Awake()
@@ -46,20 +46,21 @@ public class PhysicsLetter : MonoBehaviour
     }
 
     /// <summary>由雨生成器调用：随机字母 + 初始下落速度</summary>
-    public void Init(B1LayerConfig world, char letter, Vector2 pos, float fallSpeed)
+    public void Init(B1LayerConfig world, char letter, Vector2 pos, float fallSpeed, bool guided = false)
     {
         _world = world;
         Letter = letter;
         All.Add(this);
         transform.position = pos;
-        _vel = new Vector2(Random.Range(-0.3f, 0.3f), -fallSpeed);
+        guidedDescent = guided;
+        _vel = new Vector2(guided ? 0f : Random.Range(-0.3f, 0.3f), -fallSpeed);
         _tmp.text = letter.ToString();
         _tmp.color = color;
         // Debug.Log($"[B2Letter] 生成字符 '{letter}' @ {pos}, font={(_tmp.font != null ? _tmp.font.name : "null")}");
     }
 
     /// <summary>弹力带/外部赋予速度</summary>
-    public void Launch(Vector2 v) { _vel = v; _bandCd = 0.15f; }
+    public void Launch(Vector2 v) { guidedDescent = false; _vel = v; _bandCd = 0.15f; }
 
     private void Update()
     {
@@ -69,7 +70,7 @@ public class PhysicsLetter : MonoBehaviour
 
         // —— 物理 ——
         var p = (Vector2)transform.position;
-        _vel.y -= gravity * dt;
+        _vel.y -= (guidedDescent ? gravity * .32f : gravity) * dt;
         _vel.x *= 1f - 0.1f * dt;
         p += _vel * dt;
 

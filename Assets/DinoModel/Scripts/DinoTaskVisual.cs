@@ -97,6 +97,11 @@ public sealed class DinoTaskVisual : MonoBehaviour
                 break;
         }
 
+        if (agent.WatchingFirstStone)
+        {
+            yaw = frontYaw;
+            lean = 22f;
+        }
         var encounter = agent.ActiveEncounter;
         if ((encounter is FireEncounter || encounter is SeedEncounter) && !encounter.IsGameOver)
         {
