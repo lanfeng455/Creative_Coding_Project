@@ -28,6 +28,8 @@ public class B1EventScheduler : MonoBehaviour
     private string _letterFocus;
     private int _focusLetterIndex, _focusAttempts;
 
+    private FirstStoneGuide opening;
+
     private const string Alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     private void Awake()
@@ -40,6 +42,17 @@ public class B1EventScheduler : MonoBehaviour
         if (world == null) world = FindObjectOfType<B1LayerConfig>();
         if (dino == null) dino = FindObjectOfType<DinoAgentB1>();
         if (typeWriter == null) typeWriter = FindObjectOfType<TypeWriterB1>();
+        if (gameObject.scene.name == "TemplateB2" && dino && dino.ConstructionLogSprite && world && typeWriter)
+        {
+            var band = FindFirstObjectByType<SlingshotBand>();
+            if (band)
+            {
+                var guide = new GameObject("First STONE tutorial");
+                guide.transform.SetParent(transform, false);
+                opening = guide.AddComponent<FirstStoneGuide>();
+                opening.Bind(this, band);
+            }
+        }
         Debug.Log($"[B2Sched] Start. world={(world != null ? "已设置" : "null")}, " +
                   $"dino={(dino != null ? "已设置" : "null")}, letterInterval={letterInterval}s");
     }
@@ -56,6 +69,7 @@ public class B1EventScheduler : MonoBehaviour
     private void Update()
     {
         if (world == null || (dino && dino.Homecoming && !dino.Homecoming.Choosing)) return;
+        if (opening && opening.GuideDrop()) return;
         float dt = Time.deltaTime;
 
         // —— 字符雨（下层顶部随机 x，避开缺口免得白白掉下去）——
@@ -77,7 +91,7 @@ public class B1EventScheduler : MonoBehaviour
             }
 
             char c = '\0';
-            if (!string.IsNullOrEmpty(focus) && (_focusAttempts++ % 3 == 0 || Random.value < needLetterChance))
+            if (!string.IsNullOrEmpty(focus) && (opening || _focusAttempts++ % 3 == 0 || Random.value < needLetterChance))
             {
                 // Cycle every character, including repetitions (GLASS), rather than starving a needed letter.
                 c = focus[_focusLetterIndex++ % focus.Length];
@@ -93,11 +107,8 @@ public class B1EventScheduler : MonoBehaviour
 
             if (c != '\0')
             {
-                var go = new GameObject("Letter");
-                var l = go.AddComponent<PhysicsLetter>();
-                l.color = letterColor;               // 统一配色，拖尾跟随
                 float x = Random.Range(world.boundsXMin + 0.5f, world.GapXMin - 0.5f);
-                l.Init(world, c, new Vector3(x, world.lowerCeilingY + 0.5f, 0f), letterFallSpeed);
+                DropLetter(c, new Vector2(x, world.lowerCeilingY + 0.5f), letterFallSpeed);
                 if (!_firstLetterLogged)
                 {
                     _firstLetterLogged = true;
@@ -105,5 +116,13 @@ public class B1EventScheduler : MonoBehaviour
                 }
             }
         }
+    }
+
+    internal PhysicsLetter DropLetter(char letter, Vector2 position, float speed, bool guided = false)
+    {
+        var instance = new GameObject("Letter").AddComponent<PhysicsLetter>();
+        instance.color = letterColor;
+        instance.Init(world, letter, position, speed, guided);
+        return instance;
     }
 }

@@ -111,6 +111,8 @@ public class TypeWriterB1 : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
+    internal event System.Action<char> LetterAdded;
+
     /// <summary>弹上来的字符录入</summary>
     public void Add(char c)
     {
@@ -127,6 +129,7 @@ public class TypeWriterB1 : MonoBehaviour
         RefreshVisual(addIndex: _buffer.Count - 1, compact: _nextSlot == _buffer.Count);
         if (_charMeshes.Count > 0) LastAddedPosition = _charMeshes[_charMeshes.Count - 1].transform.position;
         AudioManager.PlayAt(Sfx.LetterRecord, transform.position);
+        LetterAdded?.Invoke(c);
 
         CheckWords();
     }

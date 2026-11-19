@@ -75,9 +75,11 @@
     <Compile Include="Assets/Scripts/B1/PhysicsLetter.cs" />
     <Compile Include="Assets/Scripts/B1/SlingshotBand.cs" />
     <Compile Include="Assets/Scripts/ScreenEdgeSegment.cs" />
+    <Compile Include="Assets/Tutorial/FirstStone/FirstStoneGuide.cs" />
     <Compile Include="Assets/Scripts/B2/B2House.cs" />
     <Compile Include="Assets/HouseModel/AFrame/Scripts/AFrameHouseVisual.cs" />
     <Compile Include="Assets/Enemies/Boss/Scripts/RiftbarkEncounter.cs" />
+    <Compile Include="Assets/Tutorial/FirstStone/FirstStonePrompts.cs" />
     <Compile Include="Assets/Scripts/Audio/AudioManager.cs" />
     <Compile Include="Assets/EnvironmentArt/ForestGlade/Scripts/BossSkyTransition.cs" />
     <Compile Include="Assets/VFX/PrototypeB2/RoomDust/B2RoomDust.cs" />

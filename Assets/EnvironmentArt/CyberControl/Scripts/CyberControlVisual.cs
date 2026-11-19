@@ -62,6 +62,8 @@ public sealed class CyberControlVisual : MonoBehaviour
         DrawRain();
     }
 
+    internal float TopEdge => GetRect().yMax;
+
     private Rect GetRect()
     {
         float top = upperBoundary != null ? upperBoundary.bounds.min.y : world.upperFloorY - 0.54f;

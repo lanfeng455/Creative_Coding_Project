@@ -35,6 +35,9 @@ public class DinoAgentB1 : MonoBehaviour
 
     internal ConstructionEncounter ActiveEncounter { get; set; }
     internal event System.Action<int> ConstructionStepInstalled;
+    internal bool WatchingFirstStone { get; set; }
+    private float firstStoneFlashUntil;
+    internal void FlashStoneInitial() => firstStoneFlashUntil = Time.time + .55f;
     public int EncounterLives { get; private set; } = 5;
     private float _lastEncounterHit;
 
@@ -57,6 +60,7 @@ public class DinoAgentB1 : MonoBehaviour
     private B1Resource _carriedLog;
 
     internal bool UsesConstructionPlan => constructionLogSprite != null && _house != null;
+    internal bool AwaitingFoundation => UsesConstructionPlan && _house.WoodStepsBuilt == 0;
     private bool NeedsWoodHouse => UsesConstructionPlan
         && _house.WoodStepsBuilt < B2House.WoodStepsRequired;
 
@@ -140,6 +144,11 @@ public class DinoAgentB1 : MonoBehaviour
     private void Update()
     {
         if (Homecoming) return;
+        if (WatchingFirstStone && IsConstructionRequest("STONE"))
+        {
+            SetBubble("STONE!");
+            return;
+        }
         float dt = Time.deltaTime;
         if (ActiveEncounter)
         {
@@ -520,7 +529,8 @@ public class DinoAgentB1 : MonoBehaviour
         bubble.gameObject.SetActive(text != null);
         if (text != null)
         {
-            bubble.text = text;
+            bubble.text = text == "STONE!" && Time.time < firstStoneFlashUntil
+                ? "<color=#6BFFFF>S</color>TONE!" : text;
             bubble.transform.position = transform.position
                 + new Vector3(0f, 1.4f * Mathf.Max(1f, Mathf.Abs(transform.localScale.y)), 0f);
             // 恐龙左右翻转会把子物体的文字镜像：用局部 X 缩放抵消

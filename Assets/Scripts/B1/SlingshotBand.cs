@@ -61,6 +61,8 @@ public class SlingshotBand : MonoBehaviour
     private readonly SpriteRenderer[] _dots = new SpriteRenderer[4];
     private readonly Dictionary<Object, float> _itemCd = new();
 
+    internal FirstStoneGuide OpeningGuide { private get; set; }
+
     private void Start()
     {
         if (rayProvider == null) rayProvider = FindObjectOfType<RightHandIndexRayProvider>();
@@ -98,6 +100,7 @@ public class SlingshotBand : MonoBehaviour
         float dt = Time.deltaTime;
         UpdateBandState(dt);
         UpdateVisuals();
+        if (OpeningGuide) OpeningGuide.ObserveTips(_valid ? _ptCount / 2 : 0, _pts[1], _pts[2]);
 
         if (!_valid) { _itemCd.Clear(); return; }
 
@@ -115,7 +118,7 @@ public class SlingshotBand : MonoBehaviour
         for (int i = PhysicsLetter.All.Count - 1; i >= 0; i--)
         {
             var l = PhysicsLetter.All[i];
-            if (l == null) continue;
+            if (l == null || (OpeningGuide && !OpeningGuide.AllowsFling(l))) continue;
             if (DistToBand(l.transform.position) > l.Radius + bandHalfWidth) continue;
 
             // 带在动 → 弹射；带静止 → 不施力，字母自然穿过去落地碎掉（避免悬停看不见）
@@ -151,7 +154,7 @@ public class SlingshotBand : MonoBehaviour
     private void UpdateBandState(float dt)
     {
         var cam = Camera.main;
-        if (rayProvider == null || cam == null) { _valid = false; }
+        if (rayProvider == null || !rayProvider.isActiveAndEnabled || cam == null) { _valid = false; }
         else if (rayProvider.HasTwoTips)
         {
             float z = -cam.transform.position.z;
@@ -290,7 +293,11 @@ public class SlingshotBand : MonoBehaviour
         if (_ptCount == 2)
         {
             if (_dots[0] != null) _dots[0].color = pipColor;
-            if (_dots[1] != null) _dots[1].color = leftTipColor;
+            if (_dots[1] != null)
+            {
+                bool tutorialRight = OpeningGuide && world && _pts[1].x > (world.boundsXMin + world.boundsXMax) * .5f;
+                _dots[1].color = tutorialRight ? rightTipColor : leftTipColor;
+            }
         }
         else if (_ptCount == 4)
         {
