@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <LangVersion>9.0</LangVersion>
@@ -74,7 +74,6 @@
     <Compile Include="Assets\VFX\PrototypeB2\RoomLanding\B2RoomLanding.cs" />
     <Compile Include="Assets\Scripts\B1\B1LayerConfig.cs" />
     <Compile Include="Assets\Scripts\C\PrototypeCTestUI.cs" />
-    <Compile Include="Assets\PrototypeB2FireWaterVFX\B2FireWaterItem.cs" />
     <Compile Include="Assets\Scripts\C\Llm\FlatJson.cs" />
     <Compile Include="Assets\Scripts\EdgeHighlightController.cs" />
     <Compile Include="Assets\Scripts\C\Play\TypewriterSendButton.cs" />
@@ -118,12 +117,10 @@
     <Compile Include="Assets\Scripts\C\DinoCController.cs" />
     <Compile Include="Assets\VFX\PrototypeB2\RoomDust\B2RoomDust.cs" />
     <Compile Include="Assets\HouseModel\AFrame\Scripts\AFrameBuildPlan.cs" />
-    <Compile Include="Assets\PrototypeB2FireWaterVFX\B2FireWaterEncounter.cs" />
     <Compile Include="Assets\VFX\PrototypeB2\Shared\B2SpriteOneShot.cs" />
     <Compile Include="Assets\Scripts\C\Llm\ObjectDefinition.cs" />
     <Compile Include="Assets\Scripts\C\Llm\LlmObjectParser.cs" />
     <Compile Include="Assets\EnvironmentArt\CyberControl\Scripts\CyberControlVisual.cs" />
-    <Compile Include="Assets\PrototypeB2FireWaterVFX\B2FireWaterEffects.cs" />
     <Compile Include="Assets\Scripts\C\PromptComposer.cs" />
     <Compile Include="Assets\ThirdParty\Whisper\Runtime\WhisperParams.cs" />
     <Compile Include="Assets\Scripts\C\Rendering\ScreenSplitVolumeCompositor.cs" />
@@ -150,6 +147,15 @@
     <Compile Include="Assets\ThirdParty\Whisper\Runtime\Native\WhisperNative.cs" />
     <Compile Include="Assets\Scripts\B1\B1Text.cs" />
     <Compile Include="Assets\Scripts\Dino\WateringCan.cs" />
+    <Compile Include="Assets/Enemies/Seed/Scripts/SeedEncounter.cs" />
+    <Compile Include="Assets/Enemies/Wind/Scripts/WindEncounter.cs" />
+    <Compile Include="Assets/HouseModel/AFrame/Scripts/PorchHomecoming.cs" />
+    <Compile Include="Assets/Enemies/ConstructionEncounter.cs" />
+    <Compile Include="Assets/Enemies/Fire/Scripts/FireEncounter.cs" />
+    <Compile Include="Assets/Enemies/Boss/Scripts/RiftbarkEncounter.cs" />
+    <Compile Include="Assets/EnvironmentArt/ForestGlade/Scripts/BossSkyTransition.cs" />
+    <Compile Include="Assets/HouseModel/AFrame/Scripts/PorchDetails.cs" />
+    <Compile Include="Assets/Enemies/Wind/Scripts/WindFlipbook.cs" />
     <None Include="Packages\com.github.homuler.mediapipe\PackageResources\Shaders\OverlayMask.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />

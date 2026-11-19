@@ -1,6 +1,6 @@
 // DinoAgentB1.cs —— Prototype B1 恐龙（常驻上层）
-// 行为：漫步 / 休息 / 追球玩球 / 把球踢进右侧缺口掉回下层 / 火灾时逃离并头顶"WATER!"求救
-// 依赖：B1LayerConfig、B1Ball（弱引用静态注册表）、B1Item（椅子）、FireHazard
+// 行为：漫步 / 休息 / 追球玩球 / 把球踢进右侧缺口掉回下层
+// 依赖：B1LayerConfig、B1Ball（弱引用静态注册表）、B1Item（椅子）
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -21,17 +21,29 @@ public class DinoAgentB1 : MonoBehaviour
     [Header("需求系统")]
     [Tooltip("两次需求之间的随机间隔（秒）")]
     public Vector2 needIntervalRange = new Vector2(7f, 13f);
-    [Tooltip("房子没建满时，要球（而非建材）的概率——仅当场上完全没球")]
-    [Range(0f, 1f)] public float ballNeedChance = 0.3f;
-    /// <summary>当前需求：六阶段建材 / BALL / null。火灾的 WATER 仍有最高优先级。</summary>
+    /// <summary>当前需求：建材 / null。</summary>
     public string CurrentNeed { get; private set; }
+
+    internal PorchHomecoming Homecoming { get; private set; }
+    internal void StartHomecoming()
+    {
+        if (Homecoming || !_house || !_house.Cottage) return;
+        SetBubble(null);
+        Homecoming = _house.Cottage.gameObject.AddComponent<PorchHomecoming>();
+        Homecoming.Begin(this);
+    }
+
+    internal ConstructionEncounter ActiveEncounter { get; set; }
+    internal event System.Action<int> ConstructionStepInstalled;
+    public int EncounterLives { get; private set; } = 5;
+    private float _lastEncounterHit;
 
     public string RequestedWord
     {
         get
         {
-            if (FireHazard.ActiveFire != null)
-                return B1Water.WaterInFlight() ? null : "WATER";
+            if (Homecoming) return null;
+            if (ActiveEncounter) return ActiveEncounter.Request;
             if (_state == State.Fleeing) return null;
             if (NeedsWoodHouse) return CanOrderConstructionLog() ? _house.NextConstructionWord : null;
             return CurrentNeed;
@@ -44,7 +56,8 @@ public class DinoAgentB1 : MonoBehaviour
     private B1Resource _targetRes;
     private B1Resource _carriedLog;
 
-    private bool NeedsWoodHouse => constructionLogSprite != null && _house != null
+    internal bool UsesConstructionPlan => constructionLogSprite != null && _house != null;
+    private bool NeedsWoodHouse => UsesConstructionPlan
         && _house.WoodStepsBuilt < B2House.WoodStepsRequired;
 
     private bool CanOrderConstructionLog()
@@ -52,6 +65,7 @@ public class DinoAgentB1 : MonoBehaviour
         if (_carriedLog != null) return false;
         foreach (var resource in B1Resource.All)
             if (resource != null && resource.Alive && resource.IsConstructionLog &&
+                resource.ConstructionWord == _house.NextConstructionWord &&
                 resource.gameObject.scene == gameObject.scene)
                 return false;
         return NeedsWoodHouse;
@@ -125,23 +139,25 @@ public class DinoAgentB1 : MonoBehaviour
 
     private void Update()
     {
+        if (Homecoming) return;
         float dt = Time.deltaTime;
+        if (ActiveEncounter)
+        {
+            if (ActiveEncounter.IsGameOver) return;
+            Face(ActiveEncounter.transform.position.x >= transform.position.x ? 1 : -1);
+            SetBubble(ActiveEncounter.Request == null ? null : ActiveEncounter.Request + "!");
+            if (EncounterLives < 5 && Time.time - _lastEncounterHit < .45f) _visualY = .82f;
+            else _visualY = 1f + (EncounterLives == 1 ? Mathf.Sin(Time.time * 5f) * .04f : 0f);
+            ApplyVisual();
+            UpdateHitFlash(dt);
+            return;
+        }
         _timer += dt;
         _restCooldown -= dt;
         _kickCd -= dt;
 
-        // 火灾 → 最高优先级逃离（恐龙不会死，只是惊慌）
-        var fire = FireHazard.ActiveFire;
-        if (fire != null && _state != State.Fleeing)
-        {
-            _state = State.Fleeing;
-            _fleeTimer = 0f;
-            _targetBall = null;
-            _targetRes = null;
-        }
-
         // —— 红色威胁：靠近就提前躲，而不是等贴脸命中才反应 ——
-        if (fire == null && _state != State.Fleeing)
+        if (_state != State.Fleeing)
         {
             RedThreatGlyph nearest = null;
             float best = threatNoticeRange;
@@ -154,23 +170,16 @@ public class DinoAgentB1 : MonoBehaviour
             if (nearest != null) Scare(nearest.transform.position.x, hit: false);
         }
 
-        // —— 需求计时：无火灾、当前无需求、不在搬建材/盖房时倒数 ——
+        // —— 需求计时：当前无需求、不在搬建材/盖房时倒数 ——
         if (NeedsWoodHouse) CurrentNeed = _house.NextConstructionWord;
-        else if (fire == null && CurrentNeed == null
+        else if (CurrentNeed == null
             && _state != State.Collecting && _state != State.Building && _state != State.Fleeing)
         {
             _needTimer -= dt;
             if (_needTimer <= 0f) PickNeed();
         }
 
-        // —— BALL 需求达成：有球出现在上层 ——
-        if (CurrentNeed == "BALL" && B1Ball.NearestOnUpper(transform.position, 100f) != null)
-        {
-            CurrentNeed = null;
-            _needTimer = Random.Range(needIntervalRange.x, needIntervalRange.y);
-        }
-
-        if (NeedsWoodHouse && fire == null && _state != State.Fleeing &&
+        if (NeedsWoodHouse && _state != State.Fleeing &&
             _state != State.Collecting && _state != State.Building)
         {
             _targetRes = B1Resource.NearestOnUpper(transform.position, 100f,
@@ -185,12 +194,12 @@ public class DinoAgentB1 : MonoBehaviour
             case State.Resting: UpdateResting(); break;
             case State.PlayingBall: UpdatePlayingBall(); break;
             case State.Sitting: UpdateSitting(); break;
-            case State.Fleeing: UpdateFleeing(fire); break;
+            case State.Fleeing: UpdateFleeing(); break;
             case State.Collecting: UpdateCollecting(); break;
             case State.Building: UpdateBuilding(dt); break;
         }
 
-        // 气泡：火灾求救 > 需求
+        // 显示当前需求
         string request = RequestedWord;
         SetBubble(request == null ? null : request + "!");
 
@@ -200,21 +209,17 @@ public class DinoAgentB1 : MonoBehaviour
         UpdateHitFlash(dt);
     }
 
-    /// <summary>随机挑一个需求：没球偶尔要球；房还能扩就要石材；都没有就喊 BALL（别再发愣）</summary>
+    /// <summary>房屋还能扩建时请求石材，否则保持空闲。</summary>
     private void PickNeed()
     {
-        if (B1Ball.Balls.Count == 0 && Random.value < ballNeedChance)
-        {
-            CurrentNeed = "BALL";
-            return;
-        }
         if (HouseCanGrow)
         {
             // 木头没搭完的情况上面已经强制 WOOD，这里只可能是扩石屋
             CurrentNeed = "STONE";
             return;
         }
-        CurrentNeed = "BALL";
+        CurrentNeed = null;
+        _needTimer = Random.Range(needIntervalRange.x, needIntervalRange.y);
     }
 
     // —— 收集建材 / 盖房 ——
@@ -253,7 +258,8 @@ public class DinoAgentB1 : MonoBehaviour
                 if (_carriedLog != null)
                 {
                     int before = _house.WoodStepsBuilt;
-                    _house.AddConstructionStep(_carrying);
+                    if (_house.AddConstructionStep(_carrying))
+                        ConstructionStepInstalled?.Invoke(_house.WoodStepsBuilt);
                     Destroy(_carriedLog.gameObject);
                     _carriedLog = null;
                     bool roofDone = _house.WoodStepsBuilt == B2House.WoodStepsRequired
@@ -267,8 +273,7 @@ public class DinoAgentB1 : MonoBehaviour
                     AudioManager.PlayAt(Sfx.HouseComplete, transform.position);
                 }
                 _carrying = null;
-                // 这一间盖完 → 马上喊 BALL，别让恐龙站着发愣
-                CurrentNeed = NeedsWoodHouse ? _house.NextConstructionWord : "BALL";
+                CurrentNeed = NeedsWoodHouse ? _house.NextConstructionWord : null;
                 _needTimer = Random.Range(needIntervalRange.x, needIntervalRange.y);
                 EnterWander();
             }
@@ -384,7 +389,7 @@ public class DinoAgentB1 : MonoBehaviour
         else if (_timer > 8f) { _targetChair = null; EnterWander(); } // 够不着就算了
     }
 
-    [Tooltip("逃跑时与火保持的安全距离")]
+    [Tooltip("受惊时与威胁保持的安全距离")]
     public float fleeSafeDist = 4.2f;
     [Tooltip("红色威胁进入这个距离才开始躲。别调太大：红字符在天花板生成时离恐龙约 2.4，调大就会\"被空气吓到\"")]
     public float threatNoticeRange = 1.8f;
@@ -394,25 +399,18 @@ public class DinoAgentB1 : MonoBehaviour
     public int demoMaxRooms = 2;
     private bool HouseCanGrow => _house != null && _house.CanGrow
         && (demoMaxRooms <= 0 || _house.Rooms.Count < demoMaxRooms);
-    private float _scareUntil;
 
-    private void UpdateFleeing(FireHazard fire)
+    private void UpdateFleeing()
     {
         _fleeTimer += Time.deltaTime;
-        // 火灭了 + 逃了 2.5 秒 → 回日常
-        if (fire == null && _fleeTimer > 2.5f)
+        if (_fleeTimer > 2.5f)
         {
             if (_carriedLog != null) _state = State.Building;
             else EnterWander();
             return;
         }
 
-        // 刚被红字符吓到的那 1.5 秒，优先躲威胁；
-        // 否则火在的时候逃跑方向会被火的位置盖掉，看起来就像"对威胁没反应"
-        bool scared = Time.time < _scareUntil;
-        float fromX = scared ? _fleeFromX
-                    : fire != null ? fire.transform.position.x
-                    : _fleeFromX;
+        float fromX = _fleeFromX;
         float lo = world.upperFloorXMin + 0.8f, hi = world.GapXMin - 0.8f;
 
         // 已经够远 → 不再像雕像一样杵着，原地小幅紧张踱步
@@ -422,7 +420,7 @@ public class DinoAgentB1 : MonoBehaviour
                 _desiredX = Mathf.Clamp(transform.position.x + Random.Range(-0.9f, 0.9f), lo, hi);
             return;
         }
-        // 逃到离火 fleeSafeDist 的同侧安全点，夹在活动范围内
+        // 逃到距威胁 fleeSafeDist 的同侧安全点，夹在活动范围内
         _desiredX = transform.position.x < fromX
             ? Mathf.Clamp(fromX - fleeSafeDist, lo, hi)
             : Mathf.Clamp(fromX + fleeSafeDist, lo, hi);
@@ -560,6 +558,15 @@ public class DinoAgentB1 : MonoBehaviour
         }
     }
 
+    internal void TakeEncounterHit(Color color)
+    {
+        EncounterLives--;
+        _lastEncounterHit = Time.time;
+        _hitFlash = .45f;
+        AudioManager.PlayAt(Sfx.DinoHurt, transform.position);
+        B1Burst.Shatter(transform.position + Vector3.up * .45f, color, 5, 3f);
+    }
+
     public State CurrentState => _state;
 
     /// <summary>受惊（红色字符命中时调用）：受击反馈 + 跳起 + 逃向反方向</summary>
@@ -569,7 +576,6 @@ public class DinoAgentB1 : MonoBehaviour
         _state = State.Fleeing;
         _fleeFromX = fromX;
         _fleeTimer = 0f;
-        _scareUntil = Time.time + 1.5f;
         _targetBall = null;
         _targetRes = null;
         if (!hit) return;   // 只是提前躲开，不播受击演出

@@ -25,6 +25,7 @@ public sealed class ForestGladeBackground : MonoBehaviour
     [SerializeField, Range(0f, 1.5f)] private float groundEdgeThickness = 0.54f;
     private Vector2 smoothedOffset;
     private MaterialPropertyBlock properties;
+    private BossSkyTransition bossSky;
     private static readonly int Scroll = Shader.PropertyToID("_Scroll");
     private static readonly int ClipRect = Shader.PropertyToID("_ClipRect");
 
@@ -42,6 +43,11 @@ public sealed class ForestGladeBackground : MonoBehaviour
 
     private void OnEnable()
     {
+        if (Application.IsPlaying(gameObject) && gameObject.scene.name == "TemplateB2")
+        {
+            if (!TryGetComponent(out bossSky)) bossSky = gameObject.AddComponent<BossSkyTransition>();
+            bossSky.Bind(layers);
+        }
         smoothedOffset = Vector2.zero;
         foreach (var layer in layers)
             if (layer.renderer != null) layer.renderer.enabled = true;
@@ -91,10 +97,12 @@ public sealed class ForestGladeBackground : MonoBehaviour
             // backdrop but behind gameplay at z=0. Negative orders hide in Play Mode.
             sprite.sortingOrder = 0;
             float right = i == 3 ? world.upperFloorXMax : world.boundsXMax;
+            properties.Clear();
             properties.SetVector(ClipRect, new Vector4(world.boundsXMin,
                 visibleBottom, right, top));
             properties.SetVector(Scroll, new Vector4(smoothedOffset.x * layer.maximumUvOffset.x,
                 smoothedOffset.y * layer.maximumUvOffset.y, 0f, 0f));
+            if (bossSky && bossSky.isActiveAndEnabled) bossSky.ApplyLayer(properties, i);
             sprite.SetPropertyBlock(properties);
         }
     }

@@ -88,11 +88,31 @@ public sealed class AFrameHouseVisual : MonoBehaviour
             s.BevelBox(new Vector2(x + 0.21f, 0.115f), new Vector2(0.44f, 0.22f),
                 _stone * (i % 2 == 0 ? 1f : 0.92f));
         }
+        // The visible side rises in projection with the deck, but its base stays
+        // on the ground. Close this face so the rear eave cannot appear to float.
+        Vector2 sideFront = new Vector2(1.12f, 0.23f);
+        Vector2 sideBack = sideFront + Depth;
+        Color sideStone = _stone * 0.78f; sideStone.a = 1f;
+        Color mortar = _stone * 0.58f; mortar.a = 1f;
+        s.Quad(new Vector2(sideFront.x, 0.005f), new Vector2(sideBack.x, 0.005f),
+            sideBack, sideFront, sideStone);
+        for (int i = 1; i < 3; i++)
+        {
+            Vector2 joint = Vector2.Lerp(sideFront, sideBack, i / 3f);
+            s.Beam(new Vector2(joint.x, 0.015f), joint, 0.018f, mortar);
+        }
         s.BevelBox(new Vector2(-0.15f, 0.035f), new Vector2(0.80f, 0.09f), _stone * 1.15f);
     }
 
     private void Deck(Shape s)
     {
+        // Solid side fascia follows the same perspective as the boards and
+        // overlaps the stone support below; no open strip beneath the roof.
+        Vector2 sideFront = new Vector2(1.12f, 0.24f);
+        Vector2 sideBack = sideFront + Depth;
+        Color sideWood = _wood * 0.78f; sideWood.a = 1f;
+        s.Quad(sideFront - Vector2.up * 0.06f, sideBack - Vector2.up * 0.06f,
+            sideBack, sideFront, sideWood);
         for (int i = 0; i < 7; i++)
         {
             // Lay the boards along one deck plane, rather than stacking full-depth
@@ -191,7 +211,7 @@ public sealed class AFrameHouseVisual : MonoBehaviour
             if (Application.isPlaying) Destroy(_material); else DestroyImmediate(_material);
     }
 
-    private sealed class Shape
+    internal sealed class Shape
     {
         private readonly List<Vector3> _v = new List<Vector3>();
         private readonly List<Color> _c = new List<Color>();

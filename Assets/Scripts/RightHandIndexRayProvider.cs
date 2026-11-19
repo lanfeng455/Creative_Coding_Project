@@ -117,6 +117,18 @@ public class RightHandIndexRayProvider : MonoBehaviour
     /// <summary>单手时的 PIP（屏幕坐标）</summary>
     public Vector2 PipScreenSingle { get; private set; }
 
+    // The porch uses the same mirrored screen coordinates as the letter slingshot.
+    internal bool TrackPorchPinch { get; set; }
+    private int pinchFrame = -10;
+    private bool pinched;
+    private Vector2 pinchTip;
+    internal bool TryGetPorchPointer(out Vector2 tip, out bool grip)
+    {
+        tip = pinchTip;
+        grip = pinched;
+        return isActiveAndEnabled && Time.frameCount - pinchFrame <= 1;
+    }
+
     private Vector2 _tipSmA, _tipSmB, _tipSmS;
     private Vector2 _pipSmA, _pipSmB, _pipSmS;
     private bool _tipSmInit, _tipSmSInit;
@@ -520,6 +532,23 @@ public class RightHandIndexRayProvider : MonoBehaviour
         _lastScreenPip = new Vector2(pipX * Screen.width, (1f - pipY) * Screen.height);
         _lastScreenTip = new Vector2(tipX * Screen.width, (1f - tipY) * Screen.height);
 
+        if (TrackPorchPinch &&
+            TryGetLandmarkScreen(landmarksList, chosenHandIndex, 4, out var thumb) &&
+            TryGetLandmarkScreen(landmarksList, chosenHandIndex, 0, out var wrist) &&
+            TryGetLandmarkScreen(landmarksList, chosenHandIndex, 9, out var knuckle))
+        {
+            float palm = Vector2.Distance(wrist, knuckle);
+            if (palm > 5f)
+            {
+                bool grip = Vector2.Distance(thumb, _lastScreenTip) < palm * (pinched ? .52f : .34f);
+                // Judge pickup and release at the observed fingertip, even after a fast drag.
+                float blend = 1f - Mathf.Exp(-32f * Time.unscaledDeltaTime);
+                pinchTip = grip != pinched || Time.frameCount - pinchFrame > 1
+                    ? _lastScreenTip : Vector2.Lerp(pinchTip, _lastScreenTip, blend);
+                pinched = grip;
+                pinchFrame = Time.frameCount;
+            }
+        }
         // —— EMA 平滑 ——
         Vector2 rawPip = _lastScreenPip;
         Vector2 rawTip = _lastScreenTip;

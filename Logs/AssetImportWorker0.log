@@ -1,62 +1,58 @@
+Unity Editor version:    6000.3.12f1 (fca03ac9b0d5)
+Branch:                  6000.3/staging
+Build type:              Release
+Batch mode:              YES
+macOS version:           Version 27.2.1 (Build 26B131)
+Darwin version:          27.2.0
+Architecture:            arm64
+Running under Rosetta:   NO
+Available memory:        131072 MB
+Date:                    2026-11-18T03:30:27Z
 [Licensing::Module] Trying to connect to existing licensing client channel...
-[Licensing::IpcConnector] Successfully connected to: "LicenseClient-lanfe" at "2026-11-17T13:06:29.0436553Z"
-Built from '6000.3/staging' branch; Version is '6000.3.12f1 (fca03ac9b0d5) revision 16556090'; Using compiler version '194234433'; Build Type 'Release'
-OS: 'Windows 11  (10.0.26200) CoreCountrySpecific' Language: 'zh' Physical Memory: 16002 MB
-BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
-System  architecture: x64
-Process architecture: x64
-Date: 2026-11-17T13:06:29Z
-[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 22184, path: "C:/Program Files/Unity Hub/UnityLicensingClient_V1/Unity.Licensing.Client.exe")
-[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-wangtianyang" at "2026-11-18T03:30:27.707738Z"
 [Licensing::Client] Handshaking with LicensingClient:
-  Version:                 1.18.3+d7ffd15
-  Session Id:              c1091d099ec645e890aaafa153a5f24d
-  Correlation Id:          29fff7a84940e6e6c0dd047b5a324879
-  External correlation Id: 5667436915952658755
-  Machine Id:              puXBMfw5TIsUhIFaJEceGwmrSp0=
-[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-lanfe" (connect: 0.00s, validation: 0.00s, handshake: 0.13s)
-[Licensing::IpcConnector] Successfully connected to: "LicenseClient-lanfe-notifications" at "2026-11-17T13:06:29.1739008Z"
-[Licensing::Module] Licensing Background thread has ended after 0.13s
+  Version:                 1.19.0+4cc3dda
+  Session Id:              33e8aa8d52fe4bf8907c29653838ca38
+  Correlation Id:          a2e4075f0d9a45cd5640d15350cdb752
+  External correlation Id: 5276286478762698848
+  Machine Id:              8Rj3l1NsJ8kcnqURWzBvKJLoZbw=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-wangtianyang" (connect: 0.00s, validation: 0.00s, handshake: 0.04s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-wangtianyang-notifications" at "2026-11-18T03:30:27.750867Z"
+[Licensing::Module] Licensing Background thread has ended after 0.04s
 
 COMMAND LINE ARGUMENTS:
-C:\UnityVersion\6000.3.12f1\Editor\Unity.exe
+/Applications/Unity/Hub/Editor/6000.3.12f1/Unity.app/Contents/MacOS/Unity
 -adb2
 -batchMode
 -noUpm
 -name
 AssetImportWorker0
 -projectPath
-C:/Unity Projects/Creative_Coding_Project
+/Users/wangtianyang/Desktop/Unity CC Project/Creative_Coding_Project
 -logFile
 Logs/AssetImportWorker0.log
 -srvPort
-62252
+59887
 -licensingIpc
-LicenseClient-lanfe
+LicenseClient-wangtianyang
 -job-worker-count
-15
+8
 -background-job-worker-count
 8
 -gc-helper-count
 1
--name
-AssetImport
-Successfully changed project path to: C:/Unity Projects/Creative_Coding_Project
-C:/Unity Projects/Creative_Coding_Project
+-name AssetImport
+Successfully changed project path to: /Users/wangtianyang/Desktop/Unity CC Project/Creative_Coding_Project
+/Users/wangtianyang/Desktop/Unity CC Project/Creative_Coding_Project
 [UnityMemory] Configuration Parameters - Can be set up in boot.config
-    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
-    "memorysetup-temp-allocator-size-audio-worker=65536"
-    "memorysetup-temp-allocator-size-gfx=262144"
     "memorysetup-allocator-temp-initial-block-size-main=262144"
     "memorysetup-allocator-temp-initial-block-size-worker=262144"
     "memorysetup-temp-allocator-size-background-worker=32768"
     "memorysetup-temp-allocator-size-job-worker=262144"
     "memorysetup-temp-allocator-size-preload-manager=33554432"
-    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
-    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
-    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
-    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
-    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
     "memorysetup-bucket-allocator-granularity=16"
     "memorysetup-bucket-allocator-bucket-count=8"
     "memorysetup-bucket-allocator-block-size=33554432"
@@ -77,14 +73,19 @@ C:/Unity Projects/Creative_Coding_Project
     "memorysetup-job-temp-allocator-block-size=2097152"
     "memorysetup-job-temp-allocator-block-size-background=1048576"
     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
-    "memorysetup-temp-allocator-size-cloud-worker=32768"
-Player connection [25040]  Target information:
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gfx=262144"
+Player connection [8420414208]  Target information:
 
-Player connection [25040]  * "[IP] 192.168.1.4 [Port] 0 [Flags] 2 [Guid] 3744964253 [EditorId] 3744964253 [Version] 1048832 [Id] WindowsEditor(7,Lan) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+Player connection [8420414208]  * "[IP] 10.4.126.113 [Port] 0 [Flags] 2 [Guid] 2166366366 [EditorId] 2166366366 [Version] 1048832 [Id] OSXEditor(0,Nick-WangMacBook-Pro.local) [Debug] 1 [PackageName] OSXEditor [ProjectName] Editor" 
 
-Player connection [25040] Host joined multi-casting on [225.0.0.222:54997]...
-Player connection [25040] Host joined alternative multi-casting on [225.0.0.222:34997]...
-JobSystem: Creating JobQueue using job-worker-count value 15
+Player connection [8420414208] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [8420414208] Host joined alternative multi-casting on [225.0.0.222:34997]...
+JobSystem: Creating JobQueue using job-worker-count value 8
 Input System module state changed to: Initialized.
 [Physics::Module] Initialized fallback backend.
 [Physics::Module] Id: 0xdecafbad
@@ -95,118 +96,98 @@ Library Redirect Path: Library/
 [Physics::Module] SDK Version: 4.1.2
 [Physics::Module] Integration Version: 1.0.0
 [Physics::Module] Threading Mode: Multi-Threaded
-Refreshing native plugins compatible for Editor in 27.76 ms, found 8 plugins.
-Preloading 1 native plugins for Editor in 1.77 ms.
+Refreshing native plugins compatible for Editor in 6.87 ms, found 6 plugins.
+Preloading 1 native plugins for Editor in 2.37 ms.
 Initialize engine version: 6000.3.12f1 (fca03ac9b0d5)
-[Subsystems] Discovering subsystems at path C:/UnityVersion/6000.3.12f1/Editor/Data/Resources/UnitySubsystems
-[Subsystems] Discovering subsystems at path C:/Unity Projects/Creative_Coding_Project/Assets
+[Subsystems] Discovering subsystems at path /Applications/Unity/Hub/Editor/6000.3.12f1/Unity.app/Contents/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path /Users/wangtianyang/Desktop/Unity CC Project/Creative_Coding_Project/Assets
 GfxDevice: creating device client; kGfxThreadingModeNonThreaded
-Direct3D:
-    Version:  Direct3D 11.0 [level 11.1]
-    Renderer: NVIDIA GeForce RTX 4060 Laptop GPU (ID=0x28e0)
-    Vendor:   NVIDIA
-    VRAM:     7957 MB
-    Driver:   32.0.15.7628
+ preferred device: Apple M5 Max (high power)
+Metal devices available: 1
+0: Apple M5 Max (high power)
+Using device Apple M5 Max (high power)
+Initializing Metal device caps: Apple M5 Max
+Mac GPU Family: 2
+Apple GPU Family: 9
+MSL Version: 3.0
+Has Float MSAA: 1
+Has Float Filtering: 1
+ReadWrite Texture Tier: 2
 Initialize mono
-Mono path[0] = 'C:/UnityVersion/6000.3.12f1/Editor/Data/Managed'
-Mono path[1] = 'C:/UnityVersion/6000.3.12f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
-Mono config path = 'C:/UnityVersion/6000.3.12f1/Editor/Data/MonoBleedingEdge/etc'
-Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56216
+Mono path[0] = '/Applications/Unity/Hub/Editor/6000.3.12f1/Unity.app/Contents/Resources/Scripting/Managed'
+Mono path[1] = '/Applications/Unity/Hub/Editor/6000.3.12f1/Unity.app/Contents/Resources/Scripting/MonoBleedingEdge/lib/mono/unityjit-macos'
+Mono config path = '/Applications/Unity/Hub/Editor/6000.3.12f1/Unity.app/Contents/Resources/Scripting/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56563
 Begin MonoManager ReloadAssembly
 Registering precompiled unity dll's ...
-Register platform support module: C:/UnityVersion/6000.3.12f1/Editor/Data/PlaybackEngines/MacStandaloneSupport/UnityEditor.OSXStandalone.Extensions.dll
-Register platform support module: C:/UnityVersion/6000.3.12f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
-[Licensing::Client] Successfully resolved entitlement details
-[Licensing::Module] License group:
-  Id: F4-BECN-JZ94-QR9S-WDCR-XXXX
-  Product: Unity Personal
-  Type: ULF
-  Expiration: 2026-11-27T14:05:25Z
-[Licensing::Module] License group:
-  Id: ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX
-  Product: Unity Personal Version
-  Type: Assigned
-  Expiration: Unlimited
-Register platform support module: C:/UnityVersion/6000.3.12f1/Editor/Data/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll
-Register platform support module: C:/UnityVersion/6000.3.12f1/Editor/Data/PlaybackEngines/LinuxStandaloneSupport/UnityEditor.LinuxStandalone.Extensions.dll
-Registered in 0.008283 seconds.
-- Loaded All Assemblies, in  0.608 seconds
-Native extension for LinuxStandalone target not found
-Native extension for Android target not found
-Native extension for WindowsStandalone target not found
+Register platform support module: /Applications/Unity/Hub/Editor/6000.3.12f1/Unity.app/Contents/PlaybackEngines/MacStandaloneSupport/UnityEditor.OSXStandalone.Extensions.dll
+Registered in 0.000299 seconds.
+- Loaded All Assemblies, in  0.178 seconds
 Native extension for OSXStandalone target not found
 Package Manager log level set to [2]
 [Package Manager] Failed to launch server process. Reason: Unity was launched with the -noUpm command-line argument
 [Package Manager] Unable to send message (not connected to server process).
 [Package Manager] Cannot connect to Unity Package Manager local server
-[Package Manager] Failed to launch server process. Reason: Unity was launched with the -noUpm command-line argument
-[Package Manager] Unable to send message (not connected to server process).
-[Package Manager] Cannot connect to Unity Package Manager local server
 ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
 Mono: successfully reloaded assembly
-- Finished resetting the current domain, in  0.472 seconds
-Domain Reload Profiling: 1075ms
-	BeginReloadAssembly (300ms)
+- Finished resetting the current domain, in  0.200 seconds
+Domain Reload Profiling: 378ms
+	BeginReloadAssembly (44ms)
 		ExecutionOrderSort (0ms)
 		DisableScriptedObjects (0ms)
 		BackupInstance (0ms)
 		ReleaseScriptingObjects (0ms)
-		CreateAndSetChildDomain (2ms)
-	RebuildCommonClasses (40ms)
-	RebuildNativeTypeToScriptingClass (11ms)
-	initialDomainReloadingComplete (54ms)
-	LoadAllAssembliesAndSetupDomain (198ms)
-		LoadAssemblies (293ms)
+		CreateAndSetChildDomain (0ms)
+	RebuildCommonClasses (21ms)
+	RebuildNativeTypeToScriptingClass (7ms)
+	initialDomainReloadingComplete (21ms)
+	LoadAllAssembliesAndSetupDomain (85ms)
+		LoadAssemblies (44ms)
 		RebuildTransferFunctionScriptingTraits (0ms)
-		AnalyzeDomain (190ms)
-			TypeCache.Refresh (188ms)
-				TypeCache.ScanAssembly (173ms)
+		AnalyzeDomain (84ms)
+			TypeCache.Refresh (83ms)
+				TypeCache.ScanAssembly (75ms)
 			BuildScriptInfoCaches (0ms)
 			ResolveRequiredComponents (0ms)
-	FinalizeReload (473ms)
+	FinalizeReload (200ms)
 		ReleaseScriptCaches (0ms)
 		RebuildScriptCaches (0ms)
-		SetupLoadedEditorAssemblies (430ms)
+		SetupLoadedEditorAssemblies (172ms)
 			LogAssemblyErrors (0ms)
-			InitializePlatformSupportModulesInManaged (110ms)
-			SetLoadedEditorAssemblies (4ms)
-			BeforeProcessingInitializeOnLoad (79ms)
-			ProcessInitializeOnLoadAttributes (147ms)
-			ProcessInitializeOnLoadMethodAttributes (90ms)
+			InitializePlatformSupportModulesInManaged (23ms)
+			SetLoadedEditorAssemblies (3ms)
+			BeforeProcessingInitializeOnLoad (41ms)
+			ProcessInitializeOnLoadAttributes (69ms)
+			ProcessInitializeOnLoadMethodAttributes (36ms)
 			AfterProcessingInitializeOnLoad (0ms)
 			EditorAssembliesLoaded (0ms)
 		ExecutionOrderSort2 (0ms)
 		AwakeInstancesAfterBackupRestoration (0ms)
+[CoreBusinessMetrics] Unexpected thread when updating session info.
 ========================================================================
 Worker process is ready to serve import requests
 Import Worker Mode flag is 0x00
 Begin MonoManager ReloadAssembly
 [Licensing::Client] Successfully resolved entitlement details
 [Licensing::Module] License group:
-  Id: F4-BECN-JZ94-QR9S-WDCR-XXXX
+  Id: F4-TAU2-T6DS-JGBW-RRJE-XXXX
   Product: Unity Personal
   Type: ULF
-  Expiration: 2026-11-27T14:05:25Z
+  Expiration: 2026-12-25T04:30:17Z
 [Licensing::Module] License group:
   Id: ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX
   Product: Unity Personal Version
   Type: Assigned
   Expiration: Unlimited
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.github.homuler.mediapipe/Runtime/Plugins/Protobuf/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Symbol file LoadedFromMemory is not a mono symbol file
 Symbol file LoadedFromMemory is not a mono symbol file
-Symbol file LoadedFromMemory is not a mono symbol file
-- Loaded All Assemblies, in  1.835 seconds
-Refreshing native plugins compatible for Editor in 4.23 ms, found 8 plugins.
-Native extension for LinuxStandalone target not found
-Native extension for Android target not found
-Native extension for WindowsStandalone target not found
+- Loaded All Assemblies, in  0.673 seconds
+Refreshing native plugins compatible for Editor in 1.43 ms, found 6 plugins.
 Native extension for OSXStandalone target not found
 [Package Manager] Failed to launch server process. Reason: Unity was launched with the -noUpm command-line argument
 [Package Manager] Unable to send message (not connected to server process).
 [Package Manager] Cannot connect to Unity Package Manager local server
-[Package Manager] Failed to launch server process. Reason: Unity was launched with the -noUpm command-line argument
-[Package Manager] Unable to send message (not connected to server process).
-[Package Manager] Cannot connect to Unity Package Manager local server
-Refreshing native plugins compatible for Editor in 17.68 ms, found 8 plugins.
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.github.homuler.mediapipe/Runtime/Plugins/Protobuf/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.github.homuler.mediapipe/Runtime/Plugins/Protobuf/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 1.13 ms, found 6 plugins.
 [Package Manager] Failed to launch server process. Reason: Unity was launched with the -noUpm command-line argument
 [Package Manager] Unable to send message (not connected to server process).
 [Package Manager] Cannot connect to Unity Package Manager local server
@@ -215,64 +196,222 @@ Refreshing native plugins compatible for Editor in 17.68 ms, found 8 plugins.
 [Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
 ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
 Mono: successfully reloaded assembly
-- Finished resetting the current domain, in  2.334 seconds
-Domain Reload Profiling: 4161ms
-	BeginReloadAssembly (468ms)
+- Finished resetting the current domain, in  0.784 seconds
+Domain Reload Profiling: 1456ms
+	BeginReloadAssembly (75ms)
 		ExecutionOrderSort (0ms)
-		DisableScriptedObjects (4ms)
+		DisableScriptedObjects (2ms)
 		BackupInstance (0ms)
 		ReleaseScriptingObjects (0ms)
-		CreateAndSetChildDomain (25ms)
-	RebuildCommonClasses (40ms)
-	RebuildNativeTypeToScriptingClass (12ms)
-	initialDomainReloadingComplete (73ms)
-	LoadAllAssembliesAndSetupDomain (1234ms)
-		LoadAssemblies (1057ms)
+		CreateAndSetChildDomain (17ms)
+	RebuildCommonClasses (19ms)
+	RebuildNativeTypeToScriptingClass (7ms)
+	initialDomainReloadingComplete (33ms)
+	LoadAllAssembliesAndSetupDomain (539ms)
+		LoadAssemblies (333ms)
 		RebuildTransferFunctionScriptingTraits (0ms)
-		AnalyzeDomain (566ms)
-			TypeCache.Refresh (467ms)
-				TypeCache.ScanAssembly (434ms)
-			BuildScriptInfoCaches (82ms)
-			ResolveRequiredComponents (10ms)
-	FinalizeReload (2334ms)
+		AnalyzeDomain (240ms)
+			TypeCache.Refresh (199ms)
+				TypeCache.ScanAssembly (186ms)
+			BuildScriptInfoCaches (34ms)
+			ResolveRequiredComponents (5ms)
+	FinalizeReload (784ms)
 		ReleaseScriptCaches (0ms)
 		RebuildScriptCaches (0ms)
-		SetupLoadedEditorAssemblies (2101ms)
+		SetupLoadedEditorAssemblies (687ms)
 			LogAssemblyErrors (0ms)
-			InitializePlatformSupportModulesInManaged (21ms)
-			SetLoadedEditorAssemblies (4ms)
-			BeforeProcessingInitializeOnLoad (220ms)
-			ProcessInitializeOnLoadAttributes (1557ms)
-			ProcessInitializeOnLoadMethodAttributes (293ms)
-			AfterProcessingInitializeOnLoad (6ms)
+			InitializePlatformSupportModulesInManaged (1ms)
+			SetLoadedEditorAssemblies (2ms)
+			BeforeProcessingInitializeOnLoad (96ms)
+			ProcessInitializeOnLoadAttributes (432ms)
+			ProcessInitializeOnLoadMethodAttributes (154ms)
+			AfterProcessingInitializeOnLoad (1ms)
 			EditorAssembliesLoaded (0ms)
 		ExecutionOrderSort2 (0ms)
-		AwakeInstancesAfterBackupRestoration (10ms)
-Launched and connected shader compiler UnityShaderCompiler.exe after 0.02 seconds
-Refreshing native plugins compatible for Editor in 29.23 ms, found 8 plugins.
-Preloading 1 native plugins for Editor in 0.41 ms.
-Unloading 59 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 9217 unused Assets / (21.3 MB). Loaded Objects now: 10086.
-Memory consumption went from 208.5 MB to 187.2 MB.
-Total: 41.726000 ms (FindLiveObjects: 3.612300 ms CreateObjectMapping: 1.057300 ms MarkObjects: 25.137300 ms  DeleteObjects: 11.916000 ms)
+		AwakeInstancesAfterBackupRestoration (2ms)
+WARNING: Shader Unsupported: 'Universal Render Pipeline/VR/SpatialMapping/Wireframe' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/VR/SpatialMapping/Wireframe' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+Launching external process: /Applications/Unity/Hub/Editor/6000.3.12f1/Unity.app/Contents/Helpers/UnityShaderCompiler
+Launched and connected shader compiler UnityShaderCompiler after 0.03 seconds
+Refreshing native plugins compatible for Editor in 1.13 ms, found 6 plugins.
+Preloading 1 native plugins for Editor in 1.42 ms.
+Unloading 60 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 8855 unused Assets / (18.1 MB). Loaded Objects now: 9686.
+Memory consumption went from 217.8 MB to 199.7 MB.
+Total: 15.487334 ms (FindLiveObjects: 0.435375 ms CreateObjectMapping: 0.430709 ms MarkObjects: 10.962541 ms  DeleteObjects: 3.658209 ms)
 
 ========================================================================
 Received Import Request.
-  Time since last request: 35077.326965 seconds.
-  path: Assets/Settings/Materials/C_ScreenSplitComposite.mat
-  artifactKey: Guid(c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/Settings/Materials/C_ScreenSplitComposite.mat using Guid(c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '74d9fdc71f63aa0d2097ef843d1aed63') in 0.1257117 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 3
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000069 seconds.
-  path: Assets/Settings/RenderTextures
-  artifactKey: Guid(f0e1d2c3b4a5968778695a4b3c2d1e0f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/Settings/RenderTextures using Guid(f0e1d2c3b4a5968778695a4b3c2d1e0f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '3226cc69e64c7cf0cc4dda3162d3231b') in 0.0284614 seconds
+  Time since last request: 32949.955763 seconds.
+  path: Assets/Audio/SE/freesound_community-jump-sound-14839.mp3
+  artifactKey: Guid(1dbf8ad965680f545a34f418ac305e9c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
+Start importing Assets/Audio/SE/freesound_community-jump-sound-14839.mp3 using Guid(1dbf8ad965680f545a34f418ac305e9c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '565f32eb3e06db21c67ced13e313fad4') in 0.040379959 seconds
 Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
 
+========================================================================
+Received Import Request.
+  Time since last request: 0.000045 seconds.
+  path: Assets/Scripts/B1/ThreatB1.cs
+  artifactKey: Guid(1c70b3461efbf8d44b36c5123f1c4cee) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
+Start importing Assets/Scripts/B1/ThreatB1.cs using Guid(1c70b3461efbf8d44b36c5123f1c4cee) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '910c75c48653485c7e3b7709a8eda8c4') in 0.006587584 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000104 seconds.
+  path: Assets/Scripts/Audio/AudioManager.cs
+  artifactKey: Guid(6243db0a4fcded7448477b75b92c810c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
+Start importing Assets/Scripts/Audio/AudioManager.cs using Guid(6243db0a4fcded7448477b75b92c810c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '52d5c80ee9fa725a681ea7c7917ded32') in 0.001996958 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000554 seconds.
+  path: Assets/Audio/SE/flame.ogg
+  artifactKey: Guid(715f6509e7a39174c84112785deb5c8e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
+Start importing Assets/Audio/SE/flame.ogg using Guid(715f6509e7a39174c84112785deb5c8e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '1b2985dccae86dfafa37321ca9a22165') in 0.011684416 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Prepare
+Begin MonoManager ReloadAssembly
+Thread 0x16d5c7000 may have been prematurely finalized
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.github.homuler.mediapipe/Runtime/Plugins/Protobuf/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Symbol file LoadedFromMemory is not a mono symbol file
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in  0.688 seconds
+Refreshing native plugins compatible for Editor in 0.99 ms, found 6 plugins.
+Native extension for OSXStandalone target not found
+[Package Manager] Failed to launch server process. Reason: Unity was launched with the -noUpm command-line argument
+[Package Manager] Unable to send message (not connected to server process).
+[Package Manager] Cannot connect to Unity Package Manager local server
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.github.homuler.mediapipe/Runtime/Plugins/Protobuf/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.github.homuler.mediapipe/Runtime/Plugins/Protobuf/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 0.84 ms, found 6 plugins.
+[Package Manager] Failed to launch server process. Reason: Unity was launched with the -noUpm command-line argument
+[Package Manager] Unable to send message (not connected to server process).
+[Package Manager] Cannot connect to Unity Package Manager local server
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.702 seconds
+Domain Reload Profiling: 1394ms
+	BeginReloadAssembly (117ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (3ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (45ms)
+	RebuildCommonClasses (18ms)
+	RebuildNativeTypeToScriptingClass (6ms)
+	initialDomainReloadingComplete (23ms)
+	LoadAllAssembliesAndSetupDomain (528ms)
+		LoadAssemblies (385ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (176ms)
+			TypeCache.Refresh (7ms)
+				TypeCache.ScanAssembly (0ms)
+			BuildScriptInfoCaches (163ms)
+			ResolveRequiredComponents (5ms)
+	FinalizeReload (702ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (609ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (1ms)
+			SetLoadedEditorAssemblies (2ms)
+			BeforeProcessingInitializeOnLoad (106ms)
+			ProcessInitializeOnLoadAttributes (351ms)
+			ProcessInitializeOnLoadMethodAttributes (148ms)
+			AfterProcessingInitializeOnLoad (1ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (6ms)
+WARNING: Shader Unsupported: 'Universal Render Pipeline/VR/SpatialMapping/Wireframe' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/VR/SpatialMapping/Wireframe' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+Refreshing native plugins compatible for Editor in 1.68 ms, found 6 plugins.
+Preloading 1 native plugins for Editor in 1.53 ms.
+Unloading 60 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 8853 unused Assets / (16.9 MB). Loaded Objects now: 9703.
+Memory consumption went from 233.3 MB to 216.3 MB.
+Total: 13.117833 ms (FindLiveObjects: 0.394584 ms CreateObjectMapping: 0.479875 ms MarkObjects: 9.837542 ms  DeleteObjects: 2.405375 ms)
+
+Prepare: number of updated asset objects reloaded= 0
+========================================================================
+Received Prepare
+Begin MonoManager ReloadAssembly
+Thread 0x16ba37000 may have been prematurely finalized
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.github.homuler.mediapipe/Runtime/Plugins/Protobuf/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Symbol file LoadedFromMemory is not a mono symbol file
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in  0.691 seconds
+Refreshing native plugins compatible for Editor in 1.11 ms, found 6 plugins.
+Native extension for OSXStandalone target not found
+[Package Manager] Failed to launch server process. Reason: Unity was launched with the -noUpm command-line argument
+[Package Manager] Unable to send message (not connected to server process).
+[Package Manager] Cannot connect to Unity Package Manager local server
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.github.homuler.mediapipe/Runtime/Plugins/Protobuf/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.github.homuler.mediapipe/Runtime/Plugins/Protobuf/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 1.14 ms, found 6 plugins.
+[Package Manager] Failed to launch server process. Reason: Unity was launched with the -noUpm command-line argument
+[Package Manager] Unable to send message (not connected to server process).
+[Package Manager] Cannot connect to Unity Package Manager local server
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.782 seconds
+Domain Reload Profiling: 1476ms
+	BeginReloadAssembly (107ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (3ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (42ms)
+	RebuildCommonClasses (18ms)
+	RebuildNativeTypeToScriptingClass (6ms)
+	initialDomainReloadingComplete (22ms)
+	LoadAllAssembliesAndSetupDomain (540ms)
+		LoadAssemblies (393ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (176ms)
+			TypeCache.Refresh (7ms)
+				TypeCache.ScanAssembly (0ms)
+			BuildScriptInfoCaches (162ms)
+			ResolveRequiredComponents (5ms)
+	FinalizeReload (783ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (689ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (1ms)
+			SetLoadedEditorAssemblies (2ms)
+			BeforeProcessingInitializeOnLoad (113ms)
+			ProcessInitializeOnLoadAttributes (396ms)
+			ProcessInitializeOnLoadMethodAttributes (175ms)
+			AfterProcessingInitializeOnLoad (1ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (7ms)
+WARNING: Shader Unsupported: 'Universal Render Pipeline/VR/SpatialMapping/Wireframe' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/VR/SpatialMapping/Wireframe' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+Refreshing native plugins compatible for Editor in 1.31 ms, found 6 plugins.
+Preloading 1 native plugins for Editor in 1.67 ms.
+Unloading 60 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 8853 unused Assets / (16.1 MB). Loaded Objects now: 9706.
+Memory consumption went from 237.1 MB to 221.0 MB.
+Total: 12.549000 ms (FindLiveObjects: 0.277458 ms CreateObjectMapping: 0.288625 ms MarkObjects: 9.759541 ms  DeleteObjects: 2.223000 ms)
+
+Prepare: number of updated asset objects reloaded= 0
 Editor requested this worker to shutdown with reason: Scaling down because of idle timeout
 AssetImportWorker is now disconnected from the server
 Process exiting
-Exiting without the bug reporter. Application will terminate with return code 0

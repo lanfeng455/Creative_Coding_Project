@@ -14,6 +14,7 @@ public static class AFrameConstructionCheck
     private static bool _interrupted, _rebuilding;
     private static double _deadline, _captureAfter;
     private static string _folder;
+    private static B2PlayCheckScope _scope;
     public static bool Running { get; private set; }
     public static string Status { get; private set; } = "Not run";
 
@@ -25,16 +26,10 @@ public static class AFrameConstructionCheck
         _house = UnityEngine.Object.FindFirstObjectByType<B2House>();
         if (_dino == null || _writer == null || _house == null || _house.WoodStepsBuilt != 0)
             throw new InvalidOperationException("A fresh B2 scene with an unbuilt house is required.");
-        foreach (var scheduler in UnityEngine.Object.FindObjectsByType<B1EventScheduler>(FindObjectsSortMode.None))
-            scheduler.enabled = false;
         _folder = Path.GetFullPath(Path.Combine(Application.dataPath, "../../output/aframe-house-v01"));
         Directory.CreateDirectory(_folder);
-        Application.runInBackground = true;
         _interrupted = _rebuilding = false;
-        var fire = new GameObject("AFrame QA Fire").AddComponent<FireHazard>();
-        fire.Init(_dino.world);
-        if (_dino.RequestedWord != "WATER") throw new Exception("Fire did not take priority over construction.");
-        fire.Extinguish();
+        _scope = new B2PlayCheckScope(_writer);
         _stage = 0; _waiting = false; _deadline = EditorApplication.timeSinceStartup + 25;
         Running = true; Status = "Running";
         EditorApplication.update += Tick;
@@ -55,6 +50,13 @@ public static class AFrameConstructionCheck
             if (!EditorApplication.isPlaying) { End("Stopped"); return; }
             EditorApplication.QueuePlayerLoopUpdate();
             if (EditorApplication.timeSinceStartup > _deadline) throw new Exception("Timeout stage " + _stage + "; request=" + _dino.RequestedWord + "; state=" + _dino.CurrentState);
+            string request = _dino.RequestedWord;
+            if (request == WindEncounter.CounterWord || request == FireEncounter.CounterWord || request == SeedEncounter.CounterWord)
+            {
+                for (int i = request.Length - 1; i >= 0; i--) _writer.Add(request[i]);
+                _deadline = EditorApplication.timeSinceStartup + 50;
+                return;
+            }
             if (_waiting)
             {
                 if (!_interrupted && _stage == 1 && _dino.CurrentState == DinoAgentB1.State.Building)
@@ -71,7 +73,7 @@ public static class AFrameConstructionCheck
                 {
                     if (_house.WoodStepsBuilt != 1 || _house.NextConstructionWord != "WOOD")
                         throw new Exception("Destroyed house did not rebuild from its first stage.");
-                    End("PASS: six materials, invalid and incomplete words, duplicate guard, repeated GLASS letters, natural collection/building, fire priority, scare/resume, completion, destruction/rebuild, six camera captures.");
+                    End("PASS: six materials, invalid and incomplete words, delivery reservation, repeated GLASS letters, natural collection/building, scare/resume, completion, destruction/rebuild, six camera captures.");
                     return;
                 }
                 Capture("stage-" + (_stage + 1) + "-" + AFrameBuildPlan.WordAt(_stage) + ".png", true);
@@ -105,8 +107,8 @@ public static class AFrameConstructionCheck
             if (Deliveries() != 0) throw new Exception("Incomplete word generated a material: " + word);
             _writer.Add(word[word.Length - 1]);
             if (Deliveries() != 1 || _dino.RequestedWord != null) throw new Exception("Expected one reserved delivery for " + word);
-            foreach (char c in word) _writer.Add(c);
-            if (Deliveries() != 1) throw new Exception("Duplicate delivery accepted for " + word);
+            // Additional valid words intentionally craft stock; reservation is
+            // verified by RequestedWord above, not by rejecting player input.
             _writer.Clear();
             _waiting = true;
             Status = "Building " + (_stage + 1) + "/6 " + word;
@@ -150,6 +152,7 @@ public static class AFrameConstructionCheck
     private static void End(string message)
     {
         EditorApplication.update -= Tick;
+        _scope?.Dispose(); _scope = null;
         Running = false; Status = message;
         File.WriteAllText(Path.Combine(_folder, "integration-check.txt"), message);
         if (message.StartsWith("FAIL")) Debug.LogError(message); else Debug.Log(message);

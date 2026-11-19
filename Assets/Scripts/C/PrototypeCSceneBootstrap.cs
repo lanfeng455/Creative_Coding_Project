@@ -65,11 +65,7 @@ namespace PrototypeC
             foreach (var table in UnityEngine.Object.FindObjectsByType<B2Table>(FindObjectsSortMode.None))
                 table.gameObject.SetActive(false);
 
-            foreach (var scheduler in UnityEngine.Object.FindObjectsByType<B1EventScheduler>(FindObjectsSortMode.None))
-            {
-                scheduler.threatFirstDelay = 1e9f;
-                scheduler.fireFirstDelay = 1e9f;
-            }
+            // 远端已彻底移除威胁/火灾调度（B1EventScheduler 只剩字符雨），无需再压制。
 
             // 语音监听（Whisper 离线）：开放词表，说 TOY → 字符雨主要掉 T/O/Y
             if (UnityEngine.Object.FindFirstObjectByType<WhisperVoiceListener>() == null)

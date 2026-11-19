@@ -920,7 +920,6 @@ MonoBehaviour:
   words:
   - BALL
   - CHAIR
-  - WATER
 --- !u!4 &1031412662
 Transform:
   m_ObjectHideFlags: 0
@@ -2434,8 +2433,6 @@ MonoBehaviour:
   threatFirstDelay: 18
   threatIntervalRange: {x: 22, y: 38}
   maxLiveThreats: 2
-  fireFirstDelay: 30
-  fireIntervalRange: {x: 45, y: 70}
 --- !u!4 &2092193254
 Transform:
   m_ObjectHideFlags: 0
