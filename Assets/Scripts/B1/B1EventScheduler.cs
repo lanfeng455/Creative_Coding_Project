@@ -28,6 +28,42 @@ public class B1EventScheduler : MonoBehaviour
     private string _letterFocus;
     private int _focusLetterIndex, _focusAttempts;
 
+    [Header("语音聚焦（Vosk，玩家说词 → 对应字母高频掉落）")]
+    [Tooltip("说完一个词后，词内字母保持高频的时长（秒）")]
+    public float voiceFocusSeconds = 5f;
+    [Tooltip("语音聚焦期间，掉出聚焦字母的概率")]
+    [Range(0f, 1f)] public float voiceLetterChance = 0.9f;
+    [Tooltip("语音聚焦期间，无关字母被跳过的概率")]
+    [Range(0f, 1f)] public float voiceUnrelatedSkipChance = 0.6f;
+    private string _voiceFocus;
+    private float _voiceUntil;
+
+    /// <summary>外部（语音识别）调用：让 word 里的字母在接下来几秒内高频掉落。优先于火灾/恐龙需求。</summary>
+    public void VoiceFocusWord(string word)
+    {
+        if (string.IsNullOrWhiteSpace(word))
+        {
+            return;
+        }
+
+        string upper = word.Trim().ToUpperInvariant();
+        var letters = new System.Text.StringBuilder();
+        foreach (char ch in upper)
+        {
+            if (ch < 'A' || ch > 'Z') continue;
+            if (letters.ToString().IndexOf(ch) < 0) letters.Append(ch);
+        }
+
+        if (letters.Length == 0) return;
+
+        _voiceFocus = letters.ToString();
+        _voiceUntil = Time.time + Mathf.Max(0.1f, voiceFocusSeconds);
+        Debug.Log($"[B2Sched] 语音聚焦：{upper} → {_voiceFocus}（{voiceFocusSeconds:0.#}s）");
+    }
+
+    /// <summary>当前仍在生效的语音聚焦字母；过期返回 null。</summary>
+    public string ActiveVoiceFocus => Time.time < _voiceUntil ? _voiceFocus : null;
+
     [Header("红色威胁")]
     public float threatFirstDelay = 45f;
     public Vector2 threatIntervalRange = new Vector2(40f, 60f);
@@ -85,7 +121,12 @@ public class B1EventScheduler : MonoBehaviour
             // 动态难度：当前焦点词 = 火灾时 WATER，其次恐龙需求（WOOD/STONE/BALL）。
             // 再把打字机里已经拼出来的字母扣掉 —— 只强化"还缺的那几个字"，
             // 例如 WOOD 已拼 WO → 只高频掉 O、D，W 不再刷屏。
-            string focus = FireHazard.ActiveFire != null ? "WATER"
+            // 语音聚焦优先于火灾/恐龙需求：玩家刚说 TOY，就主要掉 T/O/Y。
+            string voice = ActiveVoiceFocus;
+            bool voiceActive = !string.IsNullOrEmpty(voice);
+
+            string focus = voiceActive ? voice
+                         : FireHazard.ActiveFire != null ? "WATER"
                          : dino != null ? dino.RequestedWord : null;
             if (!string.IsNullOrEmpty(focus)) focus = MissingLetters(focus);
             if (focus != _letterFocus)
@@ -94,13 +135,16 @@ public class B1EventScheduler : MonoBehaviour
                 _focusLetterIndex = _focusAttempts = 0;
             }
 
+            float letterChance = voiceActive ? voiceLetterChance : needLetterChance;
+            float skipChance = voiceActive ? voiceUnrelatedSkipChance : unrelatedSkipChance;
+
             char c;
-            if (!string.IsNullOrEmpty(focus) && (_focusAttempts++ % 3 == 0 || Random.value < needLetterChance))
+            if (!string.IsNullOrEmpty(focus) && (_focusAttempts++ % 3 == 0 || Random.value < letterChance))
             {
                 // Cycle every character, including repetitions (GLASS), rather than starving a needed letter.
                 c = focus[_focusLetterIndex++ % focus.Length];
             }
-            else if (!string.IsNullOrEmpty(focus) && Random.value < unrelatedSkipChance)
+            else if (!string.IsNullOrEmpty(focus) && Random.value < skipChance)
             {
                 return;                                         // 无关字母：偶发（本次跳过）
             }

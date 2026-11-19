@@ -156,9 +156,7 @@ public class FireHazard : MonoBehaviour
         while (_sparkAcc >= 1f)
         {
             _sparkAcc -= 1f;
-            var go = new GameObject("FireSpark");
-            go.transform.position = transform.position + new Vector3(Random.Range(-0.3f, 0.3f), 0f, 0f);
-            var shard = go.AddComponent<B1Shard>();
+            var shard = B1Shard.Spawn(transform.position + new Vector3(Random.Range(-0.3f, 0.3f), 0f, 0f));
             shard.Init(B1Text.RandomLetter(),
                 new Color(1f, Random.Range(0.3f, 0.6f), 0.1f, 1f),
                 Random.Range(1.2f, 2.4f),

@@ -1,0 +1,42 @@
+{
+    "objectName": "toy",
+    "prompt": "A stylized 3D game asset for a cozy, unfinished apartment interior.\n\nVisual Style: charming, whimsical indie look; clean stylized silhouettes; soft muted colors, simple materials; slightly exaggerated, believable proportions; fitting a small dinosaur's living space.\n\nModel Requirements: only the requested object, no environment, floor, walls, background or props; whole object visible; clean coherent mesh, moderate detail, no thin/fragile geometry; appropriate proportions, recognizable construction; centered on geometric center, main axis on Y; textured, game-ready.\n\nObject: A small, colorful plaything with simple rounded shapes, painted bright colors and easy for a little dinosaur to grip and chew.\nSize Reference: about 0.45 m tall, 0.25 m wide, 0.2 m deep",
+    "normalizedId": "toy",
+    "behavior": "Play",
+    "placementKind": "Ground",
+    "sizeClass": "Small",
+    "placement": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "yawDegrees": 90.0,
+    "size": {
+        "x": 0.550000011920929,
+        "y": 0.949999988079071,
+        "z": 0.550000011920929
+    },
+    "aiModel": "meshy-t2",
+    "targetPolycount": 4000,
+    "shouldRemesh": false,
+    "enableTexture": true,
+    "textureResolution": "2k",
+    "modelType": "smart-topology",
+    "textureModel": "meshy-6-lite",
+    "enablePbr": false,
+    "generationFingerprint": "v2|meshy-t2|4000|False|True|2k|b4b2c83be161a79c|mt=smart-topology|tm=meshy-6-lite|pbr=0",
+    "previewTaskId": "01a1e888-2cf8-7297-b00b-9aabd2aa0cac",
+    "refineTaskId": "01a1e888-63f2-74f5-a101-2459891c34d5",
+    "styleId": "cozy-unfinished-apartment",
+    "styleVersion": 2,
+    "styleFingerprint": "b4b2c83be161a79c",
+    "promptTrimmed": false,
+    "promptTrimNote": "",
+    "glbBytes": 3434452,
+    "createdAtUtc": "2026-11-17T08:04:55.8914147Z",
+    "cacheOrigin": "generated-local",
+    "seededFromProjectMirrorAtUtc": "",
+    "mirrorSyncedAtUtc": "2026-11-17T08:04:55.9006886Z",
+    "mirrorBytes": 3434452,
+    "mirrorConflictNote": ""
+}

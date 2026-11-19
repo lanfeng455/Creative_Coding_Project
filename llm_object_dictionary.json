@@ -1,0 +1,68 @@
+{
+    "entries": [
+        {
+            "objectName": "chair",
+            "objectDescription": "Small cushioned armchair with a rounded wooden frame and soft fabric seat, sized for a little dinosaur to sit on.",
+            "sizeDescription": "about 0.8 m wide, 0.8 m deep, 0.9 m tall",
+            "behavior": "Rest",
+            "placement": "Ground",
+            "size": "Medium"
+        },
+        {
+            "objectName": "plant",
+            "objectDescription": "A leafy green houseplant with broad leaves rising from a simple pot, adding a cozy touch to the room.",
+            "sizeDescription": "about 0.5 m wide, 0.5 m deep, 0.9 m tall",
+            "behavior": "Touch",
+            "placement": "Ground",
+            "size": "Medium"
+        },
+        {
+            "objectName": "bed",
+            "objectDescription": "Cozy wooden bed with a soft mattress, plump pillow and a warm blanket, small enough for a little dinosaur to curl up in.",
+            "sizeDescription": "about 1.9 m long, 1.0 m wide, 0.6 m tall",
+            "behavior": "Rest",
+            "placement": "Ground",
+            "size": "Large"
+        },
+        {
+            "objectName": "painting",
+            "objectDescription": "Framed canvas artwork with a colorful painted scene, hung by a nail with a thin wooden or metal frame.",
+            "sizeDescription": "about 0.7 m wide, 0.05 m deep, 0.5 m tall",
+            "behavior": "Ignore",
+            "placement": "Wall",
+            "size": "Medium"
+        },
+        {
+            "objectName": "table",
+            "objectDescription": "A simple wooden table with a flat rectangular top and four sturdy legs, softly rounded edges, warm natural finish.",
+            "sizeDescription": "about 1.2 m wide, 0.7 m deep, 0.75 m tall",
+            "behavior": "Rest",
+            "placement": "Ground",
+            "size": "Large"
+        },
+        {
+            "objectName": "toy",
+            "objectDescription": "A small, colorful plaything with simple rounded shapes, painted bright colors and easy for a little dinosaur to grip and chew.",
+            "sizeDescription": "about 0.45 m tall, 0.25 m wide, 0.2 m deep",
+            "behavior": "Play",
+            "placement": "Ground",
+            "size": "Small"
+        },
+        {
+            "objectName": "flower pot",
+            "objectDescription": "A rounded ceramic pot with a drainage saucer, filled with soil and a small green leafy plant growing out of the top.",
+            "sizeDescription": "about 0.4 m wide, 0.4 m deep, 0.5 m tall",
+            "behavior": "Rest",
+            "placement": "Ground",
+            "size": "Medium"
+        },
+        {
+            "objectName": "apple",
+            "objectDescription": "Round red fruit with smooth glossy skin, a short brown stem on top, and a small leafy dimple.",
+            "sizeDescription": "about 8 cm wide, 8 cm deep, 7 cm tall",
+            "behavior": "Touch",
+            "placement": "Ground",
+            "size": "Small"
+        }
+    ]
+}

@@ -1,0 +1,39 @@
+{
+    "objectName": "bed",
+    "prompt": "A stylized 3D game asset for a cozy, unfinished apartment interior.\n\nVisual Style: charming, whimsical indie look; clean stylized silhouettes; soft muted colors, simple materials; slightly exaggerated, believable proportions; fitting a small dinosaur's living space.\n\nModel Requirements: only the requested object, no environment, floor, walls, background or props; whole object visible; clean coherent mesh, moderate detail, no thin/fragile geometry; appropriate proportions, recognizable construction; centered on geometric center, main axis on Y; textured, game-ready.\n\nObject: A cozy single bed with a wooden frame, soft mattress and a blanket with pillows, sized for a small dinosaur.\nSize Reference: about 1.0 m wide, 2.0 m long, 0.8 m tall",
+    "normalizedId": "bed",
+    "behavior": "Rest",
+    "placementKind": "Ground",
+    "sizeClass": "Large",
+    "placement": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "yawDegrees": 90.0,
+    "size": {
+        "x": 0.550000011920929,
+        "y": 0.949999988079071,
+        "z": 0.550000011920929
+    },
+    "aiModel": "",
+    "targetPolycount": 30000,
+    "shouldRemesh": true,
+    "enableTexture": true,
+    "textureResolution": "2k",
+    "generationFingerprint": "v2||30000|True|True|2k|b4b2c83be161a79c",
+    "previewTaskId": "01a1daaf-7bc0-7185-ab4d-ba51ecbfa9cd",
+    "refineTaskId": "01a1dab0-5408-734e-9f07-7ca460702ad6",
+    "styleId": "cozy-unfinished-apartment",
+    "styleVersion": 2,
+    "styleFingerprint": "b4b2c83be161a79c",
+    "promptTrimmed": false,
+    "promptTrimNote": "",
+    "glbBytes": 6635972,
+    "createdAtUtc": "2026-11-14T15:33:03.3070412Z",
+    "cacheOrigin": "generated-local",
+    "seededFromProjectMirrorAtUtc": "",
+    "mirrorSyncedAtUtc": "2026-11-14T15:33:03.3203878Z",
+    "mirrorBytes": 6635972,
+    "mirrorConflictNote": "覆盖前镜像 6902368 字节（同步于 2026-11-13T10:52:15.2866352Z），以本机版本为准"
+}

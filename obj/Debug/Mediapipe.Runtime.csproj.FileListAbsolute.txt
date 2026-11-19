@@ -415,7 +415,6 @@ C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Runtime\Unity
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Runtime\UnityEditor.OSXStandalone.Extensions.pdb
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Runtime\UnityEditor.Android.Extensions.pdb
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Runtime\UnityEditor.LinuxStandalone.Extensions.pdb
-C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Runtime\System.Runtime.CompilerServices.Unsafe.xml
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Runtime\Unity.Android.Types.pdb
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Runtime\Unity.Android.Gradle.pdb
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Runtime\UnityEditor.iOS.Extensions.Xcode.pdb

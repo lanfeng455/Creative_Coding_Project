@@ -70,36 +70,103 @@ public static class B1Text
     }
 }
 
-/// <summary>TMP 字符碎屑：速度/自旋/淡出/寿命到自毁，与 owner 解耦（球/字符销毁后不残留）</summary>
+/// <summary>TMP 字符碎屑：速度/自旋/淡出/寿命到点回收（走静态对象池，不再每次 Instantiate/Destroy）</summary>
 public class B1Shard : MonoBehaviour
 {
     [Tooltip("重力系数：0=原地悬停渐隐（残影拖尾用），1=正常抛物线")]
     public float gravityScale = 1f;
 
+    // 轻量对象池：预分配/复用，用完 SetActive(false) 回收，不发新对象、不进每帧分配。
+    private const int MaxPooled = 96;
+    private static readonly Stack<B1Shard> Pool = new Stack<B1Shard>();
+    private static readonly string[] CharCache = new string[128];
+
     private TextMeshPro _tmp;
     private Vector3 _vel;
     private float _spin, _life, _maxLife, _baseAlpha = 1f;
 
+    /// <summary>从池里取一个碎屑并摆到 position（池空才新建）；调用后必须接 Init(...)</summary>
+    public static B1Shard Spawn(Vector3 position)
+    {
+        B1Shard shard = null;
+        while (Pool.Count > 0)
+        {
+            B1Shard pooled = Pool.Pop();
+            if (pooled != null) { shard = pooled; break; }
+        }
+
+        if (shard == null)
+        {
+            shard = new GameObject("B1Shard").AddComponent<B1Shard>();
+        }
+
+        Transform t = shard.transform;
+        t.SetParent(null, false);
+        t.position = position;
+        t.rotation = Quaternion.identity;
+        t.localScale = Vector3.one;
+        shard.gameObject.SetActive(true);
+        return shard;
+    }
+
     public void Init(char c, Color color, float fontSize, Vector3 vel, float spinDeg, float life, int sortOrder = 4)
     {
-        _tmp = B1Text.Make("Shard", transform, fontSize, color, sortOrder);
-        _tmp.text = c.ToString();
+        EnsureText(fontSize, sortOrder);
+        _tmp.text = CharString(c);                     // 字符 → string 走静态缓存，不产生新的字符串垃圾
+        _tmp.color = new Color(color.r, color.g, color.b, 1f);
+        _tmp.alpha = color.a;
         _baseAlpha = color.a;
         _vel = vel; _spin = spinDeg;
         _life = _maxLife = life;
+        gravityScale = 1f;                             // 复用时归位；拖尾等调用方可在 Init 之后覆盖
+    }
+
+    // TMP 子物体只在第一次 Spawn 时创建，之后只改字号/排序层
+    private void EnsureText(float fontSize, int sortOrder)
+    {
+        if (_tmp == null)
+        {
+            _tmp = B1Text.Make("Shard", transform, fontSize, Color.white, sortOrder);
+            return;
+        }
+
+        _tmp.fontSize = fontSize;
+        _tmp.sortingOrder = sortOrder;
     }
 
     private void Update()
     {
         float dt = Time.deltaTime;
         _life -= dt;
-        if (_life <= 0f) { Destroy(gameObject); return; }
+        if (_life <= 0f) { Despawn(); return; }
 
         _vel.y -= 6f * gravityScale * dt;        // 轻重力
         _vel *= 1f - 1.2f * dt;                  // 空气阻力
         transform.position += _vel * dt;
         transform.Rotate(0f, 0f, _spin * dt);
         if (_tmp != null) _tmp.alpha = Mathf.Clamp01(_life / _maxLife) * _baseAlpha;
+    }
+
+    private void Despawn()
+    {
+        gameObject.SetActive(false);
+        if (Pool.Count < MaxPooled) Pool.Push(this);
+        else Destroy(gameObject);
+    }
+
+    private static string CharString(char c)
+    {
+        int index = c;
+        if (index < 0 || index >= CharCache.Length) return c.ToString();
+
+        string cached = CharCache[index];
+        if (cached == null)
+        {
+            cached = c.ToString();
+            CharCache[index] = cached;
+        }
+
+        return cached;
     }
 }
 
@@ -111,9 +178,7 @@ public static class B1Burst
     {
         for (int i = 0; i < count; i++)
         {
-            var go = new GameObject("B1Shard");
-            go.transform.position = pos;
-            var shard = go.AddComponent<B1Shard>();
+            B1Shard shard = B1Shard.Spawn(pos);
             float ang = Random.Range(0f, Mathf.PI * 2f);
             shard.Init(B1Text.RandomLetter(), color,
                 fontSize * Random.Range(0.5f, 0.8f),

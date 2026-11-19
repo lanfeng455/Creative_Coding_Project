@@ -17,6 +17,18 @@ namespace Mediapipe.Unity.Sample.HandLandmarkDetection
 
     private Experimental.TextureFramePool _textureFramePool;
 
+    // 结果版本号与时间戳：外部组件（如 RightHandIndexRayProvider）用它们判断
+    // "读到的是不是一帧新的推理结果"，从而按真实推理间隔做滤波/丢帧宽限。
+    // 回调在 MediaPipe 的线程上执行，写入用 Interlocked 保证可见性。
+    private int _resultVersion;
+    private long _resultTimestampMs;
+
+    /// <summary>每收到一帧新的推理结果 +1（无论有没有检测到手）</summary>
+    public int ResultVersion => System.Threading.Volatile.Read(ref _resultVersion);
+
+    /// <summary>最近一帧推理结果对应的时间戳（毫秒，随 Play 重置）</summary>
+    public long ResultTimestampMs => System.Threading.Interlocked.Read(ref _resultTimestampMs);
+
     public readonly HandLandmarkDetectionConfig config = new HandLandmarkDetectionConfig();
 
     public override void Stop()
@@ -154,6 +166,8 @@ namespace Mediapipe.Unity.Sample.HandLandmarkDetection
     private void OnHandLandmarkDetectionOutput(HandLandmarkerResult result, Image image, long timestamp)
     {
       _handLandmarkerResultAnnotationController.DrawLater(result);
+      System.Threading.Interlocked.Exchange(ref _resultTimestampMs, timestamp);
+      System.Threading.Interlocked.Increment(ref _resultVersion);
     }
   }
 }

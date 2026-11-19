@@ -1,5 +1,6 @@
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Mediapipe.Unity.Sample.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Mediapipe.Unity.Sample.pdb
+C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\AiEditorToolsSdk.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Google.Protobuf.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\log4netPlastic.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Mediapipe.Runtime.dll
@@ -7,6 +8,7 @@ C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Mono.Cecil.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\mscorlib.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\netstandard.dll
+C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Newtonsoft.Json.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\nunit.framework.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\ReportGeneratorMerged.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\System.AppContext.dll
@@ -48,7 +50,6 @@ C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\System.IO.FileSystem.DriveInfo.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\System.IO.FileSystem.Primitives.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\System.IO.FileSystem.Watcher.dll
-C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\System.IO.Hashing.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\System.IO.IsolatedStorage.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\System.IO.MemoryMappedFiles.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\System.IO.Pipes.dll
@@ -282,7 +283,6 @@ C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\UnityEngine.NVIDIAModule.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Unity.Cecil.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\System.CodeDom.dll
-C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Newtonsoft.Json.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\MacOSCodeSigning.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\MacStandalonePlayerBuildProgram.Data.dll
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\WinPlayerBuildProgram.Data.dll
@@ -426,8 +426,8 @@ C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\UnityEditor.OSXStandalone.Extensions.pdb
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\UnityEditor.Android.Extensions.pdb
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\UnityEditor.LinuxStandalone.Extensions.pdb
-C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\System.Runtime.CompilerServices.Unsafe.xml
-C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\System.IO.Hashing.xml
+C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Newtonsoft.Json.pdb
+C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Newtonsoft.Json.xml
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Unity.Android.Types.pdb
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Unity.Android.Gradle.pdb
 C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\UnityEditor.iOS.Extensions.Xcode.pdb
@@ -445,6 +445,3 @@ C:\Unity Projects\Creative_Coding_Project\obj\Debug\Mediapipe.Unity.Sample.cspro
 C:\Unity Projects\Creative_Coding_Project\obj\Debug\Mediapip.EBDB17F6.Up2Date
 C:\Unity Projects\Creative_Coding_Project\obj\Debug\Mediapipe.Unity.Sample.dll
 C:\Unity Projects\Creative_Coding_Project\obj\Debug\Mediapipe.Unity.Sample.pdb
-C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\AiEditorToolsSdk.dll
-C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Newtonsoft.Json.pdb
-C:\Unity Projects\Creative_Coding_Project\Temp\Bin\Debug\Mediapipe.Unity.Sample\Newtonsoft.Json.xml

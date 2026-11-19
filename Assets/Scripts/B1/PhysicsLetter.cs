@@ -55,7 +55,7 @@ public class PhysicsLetter : MonoBehaviour
         _vel = new Vector2(Random.Range(-0.3f, 0.3f), -fallSpeed);
         _tmp.text = letter.ToString();
         _tmp.color = color;
-        Debug.Log($"[B2Letter] 生成字符 '{letter}' @ {pos}, font={(_tmp.font != null ? _tmp.font.name : "null")}");
+        // Debug.Log($"[B2Letter] 生成字符 '{letter}' @ {pos}, font={(_tmp.font != null ? _tmp.font.name : "null")}");
     }
 
     /// <summary>弹力带/外部赋予速度</summary>
@@ -113,9 +113,7 @@ public class PhysicsLetter : MonoBehaviour
             while (_trailAcc >= trailInterval)
             {
                 _trailAcc -= trailInterval;
-                var go = new GameObject("LetterTrail");
-                go.transform.position = transform.position;
-                var shard = go.AddComponent<B1Shard>();
+                var shard = B1Shard.Spawn(transform.position);
                 shard.Init(Letter, new Color(color.r, color.g, color.b, trailAlpha),
                     size * 9f, (Vector3)(_vel * 0.35f), 0f, trailLife, sortOrder: 1);
                 shard.gravityScale = 0.15f;

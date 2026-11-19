@@ -1,0 +1,42 @@
+{
+    "objectName": "table",
+    "prompt": "A stylized 3D game asset for a cozy, unfinished apartment interior.\n\nVisual Style: charming, whimsical indie look; clean stylized silhouettes; soft muted colors, simple materials; slightly exaggerated, believable proportions; fitting a small dinosaur's living space.\n\nModel Requirements: only the requested object, no environment, floor, walls, background or props; whole object visible; clean coherent mesh, moderate detail, no thin/fragile geometry; appropriate proportions, recognizable construction; centered on geometric center, main axis on Y; textured, game-ready.\n\nObject: A simple wooden table with a flat rectangular top and four sturdy legs, softly rounded edges, warm natural finish.\nSize Reference: about 1.2 m wide, 0.7 m deep, 0.75 m tall",
+    "normalizedId": "table",
+    "behavior": "Rest",
+    "placementKind": "Ground",
+    "sizeClass": "Large",
+    "placement": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "yawDegrees": 90.0,
+    "size": {
+        "x": 0.550000011920929,
+        "y": 0.949999988079071,
+        "z": 0.550000011920929
+    },
+    "aiModel": "meshy-t2",
+    "targetPolycount": 4000,
+    "shouldRemesh": false,
+    "enableTexture": true,
+    "textureResolution": "2k",
+    "modelType": "smart-topology",
+    "textureModel": "meshy-6-lite",
+    "enablePbr": false,
+    "generationFingerprint": "v2|meshy-t2|4000|False|True|2k|b4b2c83be161a79c|mt=smart-topology|tm=meshy-6-lite|pbr=0",
+    "previewTaskId": "01a1e4bf-4ccf-772c-a758-87108d1e78b3",
+    "refineTaskId": "01a1e4bf-82c0-7011-ae8b-f02552099063",
+    "styleId": "cozy-unfinished-apartment",
+    "styleVersion": 2,
+    "styleFingerprint": "b4b2c83be161a79c",
+    "promptTrimmed": false,
+    "promptTrimNote": "",
+    "glbBytes": 2514576,
+    "createdAtUtc": "2026-11-16T14:26:45.3679835Z",
+    "cacheOrigin": "generated-local",
+    "seededFromProjectMirrorAtUtc": "",
+    "mirrorSyncedAtUtc": "2026-11-16T14:26:45.3786861Z",
+    "mirrorBytes": 2514576,
+    "mirrorConflictNote": ""
+}

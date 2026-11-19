@@ -1,0 +1,42 @@
+{
+    "objectName": "chair",
+    "prompt": "A stylized 3D game asset for a cozy, unfinished apartment interior.\n\nVisual Style: charming, whimsical indie look; clean stylized silhouettes; soft muted colors, simple materials; slightly exaggerated, believable proportions; fitting a small dinosaur's living space.\n\nModel Requirements: only the requested object, no environment, floor, walls, background or props; whole object visible; clean coherent mesh, moderate detail, no thin/fragile geometry; appropriate proportions, recognizable construction; centered on geometric center, main axis on Y; textured, game-ready.\n\nObject: A simple wooden chair with a flat seat, straight backrest and four sturdy legs, slightly worn from use.\nSize Reference: about 0.45 m wide, 0.45 m deep, 0.9 m tall",
+    "normalizedId": "chair",
+    "behavior": "Rest",
+    "placementKind": "Ground",
+    "sizeClass": "Medium",
+    "placement": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "yawDegrees": 90.0,
+    "size": {
+        "x": 0.550000011920929,
+        "y": 0.949999988079071,
+        "z": 0.550000011920929
+    },
+    "aiModel": "meshy-t2",
+    "targetPolycount": 4000,
+    "shouldRemesh": false,
+    "enableTexture": true,
+    "textureResolution": "2k",
+    "modelType": "smart-topology",
+    "textureModel": "meshy-6-lite",
+    "enablePbr": false,
+    "generationFingerprint": "v2|meshy-t2|4000|False|True|2k|b4b2c83be161a79c|mt=smart-topology|tm=meshy-6-lite|pbr=0",
+    "previewTaskId": "01a1e44e-bedc-71a7-831b-2f1fff0f035b",
+    "refineTaskId": "01a1e44e-f09e-774d-98ed-c725a79dc154",
+    "styleId": "cozy-unfinished-apartment",
+    "styleVersion": 2,
+    "styleFingerprint": "b4b2c83be161a79c",
+    "promptTrimmed": false,
+    "promptTrimNote": "",
+    "glbBytes": 3196844,
+    "createdAtUtc": "2026-11-16T12:23:55.2150787Z",
+    "cacheOrigin": "generated-local",
+    "seededFromProjectMirrorAtUtc": "",
+    "mirrorSyncedAtUtc": "2026-11-16T12:23:55.2250302Z",
+    "mirrorBytes": 3196844,
+    "mirrorConflictNote": "覆盖前镜像 6181592 字节（同步于 2026-11-13T11:03:39.7533196Z），以本机版本为准"
+}

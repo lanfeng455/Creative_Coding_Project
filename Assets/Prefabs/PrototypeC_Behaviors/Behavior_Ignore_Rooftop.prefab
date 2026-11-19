@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &963659154798158001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2405385629008159493}
+  - component: {fileID: 5594982333398361700}
+  m_Layer: 0
+  m_Name: Behavior_Ignore_Rooftop
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2405385629008159493
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963659154798158001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5594982333398361700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963659154798158001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2d8c272e54472d4abd6957814272d9d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PrototypeC.ObjectBehaviorProfile
+  behavior: 3
+  placement: 2
+  colliderMode: 1
+  colliderSizing: 0
+  colliderPadding: 1
+  colliderMaxThickness: 0.18
+  fixedSize: {x: 0.5, y: 0.5, z: 0.5}
+  bodyMode: 0
+  mass: 2
+  linearDamping: 1.5
+  angularDamping: 4
+  useGravity: 1
+  lockY: 0
+  lockZ: 0
+  freezeRotation: 0
+  startAsleep: 0
+  pushable: 0
+  pushFactor: 0
+  needsSupportFloor: 0
+  wobbleOnTouch: 0
+  wobbleAmplitude: 0.05
+  wobbleDuration: 0.45
+  wobbleOscillations: 1.5
+  wobbleProbePadding: 0.08

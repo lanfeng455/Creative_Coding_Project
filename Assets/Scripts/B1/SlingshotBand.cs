@@ -36,6 +36,12 @@ public class SlingshotBand : MonoBehaviour
     [Tooltip("速度采样回看窗口（秒）")]
     public float velWindow = 0.15f;
 
+    [Header("诊断日志（只打印，不改判定与参数）")]
+    [Tooltip("打开后每 0.5 秒打印：识别到几根手指、每根指尖的世界位置、带速、范围内的球/物品及距离和是否满足弹射条件；球被弹射时额外打印施加的冲量")]
+    public bool debugLog = false;
+    [Tooltip("诊断日志的打印间隔（秒）")]
+    public float debugLogInterval = 0.5f;
+
     [Header("视觉（TemplateB 屋檐风：细线 + 指尖矩形）")]
     public Color bandColor = new Color(1f, 1f, 1f, 0.55f);
     public Color bandHotColor = new Color(0.4f, 1f, 0.7f, 0.95f);
@@ -60,6 +66,7 @@ public class SlingshotBand : MonoBehaviour
     private LineRenderer _line;
     private readonly SpriteRenderer[] _dots = new SpriteRenderer[4];
     private readonly Dictionary<Object, float> _itemCd = new();
+    private float _debugNextLog;
 
     private void Start()
     {
@@ -99,6 +106,8 @@ public class SlingshotBand : MonoBehaviour
         UpdateBandState(dt);
         UpdateVisuals();
 
+        if (debugLog) TickDebugLog(dt);   // 只读状态打印，不参与判定
+
         if (!_valid) { _itemCd.Clear(); return; }
 
         // 有指尖跑到上层（分界线以上）→ 整条带不参与弹射。
@@ -134,7 +143,12 @@ public class SlingshotBand : MonoBehaviour
             {
                 var it = item;
                 // 只有真的向上甩成功才进入冷却；否则物品继续下落/停留
-                if (Fling(item.transform.position, v => it.Launch(v))) _itemCd[item] = 0.2f;
+                if (Fling(item.transform.position, v => it.Launch(v)))
+                {
+                    _itemCd[item] = 0.2f;
+                    if (debugLog)
+                        Debug.Log($"[Slingshot] 弹床命中 {ObjectLabel(item)}：施加冲量 v=({item.Velocity.x:F2}, {item.Velocity.y:F2})｜带速 {bandSpeed:F2}");
+                }
             }
             else if (still)
             {
@@ -144,6 +158,59 @@ public class SlingshotBand : MonoBehaviour
                 _itemCd[item] = 0.15f;
             }
         }
+    }
+
+    // —— 诊断日志（只读，不改变任何判定与参数） ——
+
+    private void TickDebugLog(float dt)
+    {
+        _debugNextLog -= dt;
+        if (_debugNextLog > 0f) return;
+        _debugNextLog = Mathf.Max(0.1f, debugLogInterval);
+
+        if (!_valid)
+        {
+            Debug.Log($"[Slingshot] 诊断：没识别到手指（rayProvider {(rayProvider != null ? "存在" : "为空")}，无指尖数据）");
+            return;
+        }
+
+        string fingers = _ptCount >= 4
+            ? $"2 根｜左指尖 ({_pts[1].x:F2}, {_pts[1].y:F2})｜右指尖 ({_pts[2].x:F2}, {_pts[2].y:F2})"
+            : $"1 根｜指尖 ({_pts[1].x:F2}, {_pts[1].y:F2})";
+
+        float bandSpeed = _midVel.magnitude;
+        bool still = bandSpeed < stillBandSpeed;
+        float up = Vector2.Dot(_midVel, Vector2.up);
+        float range = 0.3f + bandHalfWidth;
+
+        var hits = new System.Text.StringBuilder();
+        foreach (var item in B1Item.All)
+        {
+            if (item == null || !item.Alive) continue;
+            if (item is B1Resource { IsConstructionLog: true }) continue;
+
+            float d = DistToBand(item.transform.position);
+            if (d > range) continue;
+
+            string reason;
+            if (item.IsResting && still) reason = "静止带不施力";
+            else if (_itemCd.ContainsKey(item)) reason = "冷却中";
+            else if (still) reason = "带静止：只做地面反弹";
+            else if (up < minUpFlingSpeed) reason = $"没向上甩（向上 {up:F2} < {minUpFlingSpeed:F2}）";
+            else reason = "满足弹射条件";
+
+            if (hits.Length > 0) hits.Append("；");
+            hits.Append($"{ObjectLabel(item)} 距离 {d:F2}（{reason}）");
+        }
+
+        Debug.Log($"[Slingshot] 诊断：手指 {fingers}｜带速 {bandSpeed:F2}（向上 {up:F2}）｜静止={still}" +
+                  $"｜指尖在下层={_tipsInLowerLayer}｜范围内的球/物品：{(hits.Length > 0 ? hits.ToString() : "无")}");
+    }
+
+    private static string ObjectLabel(B1Item item)
+    {
+        string type = item is B1Ball ? "球" : item.GetType().Name;
+        return $"{type}[{(string.IsNullOrEmpty(item.name) ? "未命名" : item.name)}]";
     }
 
     // —— 带状态追踪 ——

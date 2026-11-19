@@ -15,15 +15,49 @@ public abstract class B1Item : MonoBehaviour
     public static IReadOnlyList<B1Item> All => _all;
 
     [Header("物理参数（运行时可调）")]
+    [Tooltip("重力加速度（米/秒²）")]
     public float gravity = 9.8f;
-    public float groundBounce = 0.45f;
+    [Tooltip("落地恢复系数 restitution：0 = 不弹，1 = 完全弹回。新球建议 0.65~0.8")]
+    [Range(0f, 1f)] public float groundBounce = 0.45f;
+    [Tooltip("左右边界反弹系数")]
     public float wallBounce = 0.75f;
+    [Tooltip("水平空气阻力（每秒衰减比例）")]
     public float drag = 0.15f;
+    [Tooltip("最小反弹速度：落地速度低于它才允许静止，否则继续弹")]
+    public float minBounceSpeed = 0.8f;
+    [Tooltip("落地时保留的水平速度比例（1 = 不损失）")]
+    [Range(0f, 1f)] public float groundHorizontalDamping = 0.92f;
+
+    [Header("水平活动范围（Prototype C 的球会夹到相机可视范围内；默认沿用世界边界）")]
+    [Tooltip("勾上后用下面的左右边界，不再用 B1LayerConfig.boundsXMin / boundsXMax")]
+    public bool useCustomHorizontalBounds = false;
+    [Tooltip("自定义左边界（世界 X，米）")]
+    public float horizontalBoundsMin = -8.4f;
+    [Tooltip("自定义右边界（世界 X，米）")]
+    public float horizontalBoundsMax = 8.4f;
 
     protected B1LayerConfig _world;
     protected Vector2 _vel;
     protected float _radius = 0.25f;
     protected SpriteRenderer _sr;
+    protected float _ignoreUpperFloorUntil;
+
+    /// <summary>物理半径（Prototype C 的球按渲染包围盒写入）。</summary>
+    public float Radius => _radius;
+
+    /// <summary>本帧是否接触地面（StepPhysics 写入；持续微弹用它判断能不能补冲量）。</summary>
+    public bool Grounded { get; private set; }
+
+    /// <summary>把水平活动范围夹到给定区间（球滚出画面就看不到了）。</summary>
+    public void SetHorizontalBounds(float min, float max)
+    {
+        useCustomHorizontalBounds = true;
+        horizontalBoundsMin = Mathf.Min(min, max);
+        horizontalBoundsMax = Mathf.Max(min, max);
+    }
+
+    /// <summary>在 seconds 秒内无视上层地板（恐龙把球压下 / 强制穿板用）。</summary>
+    public void IgnoreUpperFloorFor(float seconds) => _ignoreUpperFloorUntil = Time.time + Mathf.Max(0f, seconds);
 
     protected virtual void Awake()
     {
@@ -53,25 +87,32 @@ public abstract class B1Item : MonoBehaviour
     {
         string evt = "None";
         var p = (Vector2)transform.position;
+        Grounded = false;
 
         _vel.y -= gravity * dt;
         _vel.x *= 1f - drag * dt;
         p += _vel * dt;
 
-        // 左右边界
-        float lo = _world.boundsXMin + _radius, hi = _world.boundsXMax - _radius;
+        // 左右边界：默认用世界边界，球可以覆盖成相机可视范围（B1 原物品不受影响）
+        float minX = useCustomHorizontalBounds ? horizontalBoundsMin : _world.boundsXMin;
+        float maxX = useCustomHorizontalBounds ? horizontalBoundsMax : _world.boundsXMax;
+        float lo = minX + _radius, hi = maxX - _radius;
+        if (hi < lo) { float mid = (lo + hi) * 0.5f; lo = hi = mid; }
         if (p.x < lo) { p.x = lo; _vel.x = Mathf.Abs(_vel.x) * wallBounce; evt = "Wall"; }
         if (p.x > hi) { p.x = hi; _vel.x = -Mathf.Abs(_vel.x) * wallBounce; evt = "Wall"; }
 
         // 支撑地面（缺口感知）
         float ground = floorY ?? _world.GroundYAt(p.x, p.y);
+        // 强制穿板窗口：忽略上层地板（恐龙下压球 / 需要把球送下层时用）
+        if (floorY == null && Time.time < _ignoreUpperFloorUntil) ground = _world.lowerGroundY;
         if (p.y - _radius <= ground && _vel.y <= 0f)
         {
+            Grounded = true;
             p.y = ground + _radius;
-            if (Mathf.Abs(_vel.y) > 0.8f)
+            if (Mathf.Abs(_vel.y) > minBounceSpeed)
             {
                 _vel.y = -_vel.y * groundBounce;
-                _vel.x *= 0.92f;
+                _vel.x *= groundHorizontalDamping;
                 evt = "Ground";
             }
             else { _vel.y = 0f; if (evt == "None") evt = "Rest"; }
@@ -100,6 +141,10 @@ public class B1Ball : B1Item
     [Tooltip("球速低于此值时不出拖尾（停在地上不拉尾）")]
     public float trailMinSpeed = 0.5f;
 
+    [Header("下层保底弹跳（默认关，保持 B1 原行为；Prototype C 的预制体球会打开）")]
+    [Tooltip("下层最低弹射高度（米）：落地后的反弹高度低于它就补回这个高度；0 = 关闭。用 v=√(2g·高度) 直接赋值，不依赖恢复系数链")]
+    public float layerBounceMinHeight = 0f;
+
     private GlyphTrail _trail;
 
     protected override void Awake()
@@ -108,24 +153,56 @@ public class B1Ball : B1Item
         Balls.Add(this);
         _trail = new GlyphTrail(trailInterval);
         _radius = size;
-        // TemplateB 同款："@" 字符贴图就是天然的字符球（5×7 像素字，染成球色）
-        _sr.sprite = LetterPlant.GlyphSprite('@');
-        _sr.color = ballColor;
-        _sr.sortingOrder = 3;
-        transform.localScale = Vector3.one * (size * 2f);
+        // 没有 SpriteRenderer 的宿主（例如 3D 预制体球）不套字符贴图、也不改缩放，
+        // 只复用这里的物理与"恐龙会来踢"的注册表。
+        if (_sr != null)
+        {
+            _sr.sprite = LetterPlant.GlyphSprite('@');
+            _sr.color = ballColor;
+            _sr.sortingOrder = 3;
+            transform.localScale = Vector3.one * (size * 2f);
+        }
     }
+
+    /// <summary>设定物理半径（预制体球按真实渲染包围盒算，避免半个球埋进地板）。</summary>
+    public void SetPhysicsRadius(float r) => _radius = Mathf.Max(0.02f, r);
 
     protected override void OnDestroy() { base.OnDestroy(); Balls.Remove(this); }
 
     private void Update()
     {
-        string evt = StepPhysics(Time.deltaTime);
+        float dt = Time.deltaTime;
+        string evt = StepPhysics(dt);
         if (evt == "Ground" || evt == "Wall")
             AudioManager.PlayAt(Sfx.BallBounce, transform.position);
 
+        TickLayerBounce();
+
         // TemplateB 同款拖尾：按固定间隔甩出渐隐的 "@" 残影
-        if (_trail != null && _vel.sqrMagnitude > trailMinSpeed * trailMinSpeed)
+        if (_sr != null && _trail != null && _vel.sqrMagnitude > trailMinSpeed * trailMinSpeed)
             _trail.Tick(transform.position, _sr.sprite, ballColor, size * 2f);
+    }
+
+    /// <summary>复用本球已有的字符拖尾（没有 SpriteRenderer 的宿主，例如 3D 预制体球）。</summary>
+    public void EmitTrail(Vector3 pos, Sprite sprite, Color color, float scale) => _trail?.Tick(pos, sprite, color, scale);
+
+    /// <summary>调整拖尾发射间隔（重建同一个 GlyphTrail，不另写一套实现）。</summary>
+    public void SetTrailInterval(float interval) => _trail = new GlyphTrail(Mathf.Max(0.01f, interval));
+
+    /// <summary>
+    /// 下层保底弹跳：只在"这一帧刚落地"时检查，落地后的反弹高度（v²/2g）低于
+    /// layerBounceMinHeight 就把它补到这个高度（v = √(2g·高度)）。
+    /// 因为冲量是直接赋值、不经过恢复系数链，所以不会继续衰减，也不会停在 _vel.y = 0 的静止分支。
+    /// 上层不生效；不提供任何自动跨层/自动上弹。
+    /// </summary>
+    private void TickLayerBounce()
+    {
+        if (layerBounceMinHeight <= 0.01f || _world == null) return;
+        if (!Grounded) return;                              // 只在落地那一帧判定
+        if (_world.OnUpperFloor(transform.position)) return; // 上层不保底
+
+        float needV = Mathf.Sqrt(2f * gravity * layerBounceMinHeight);
+        if (_vel.y < needV) _vel.y = needV;
     }
 
     /// <summary>最近的、位于上层地板上的球（恐龙找玩伴用）</summary>

@@ -1,0 +1,42 @@
+{
+    "objectName": "basketball hoop",
+    "prompt": "A stylized 3D game asset for a cozy, unfinished apartment interior.\n\nVisual Style: charming, whimsical indie look; clean stylized silhouettes; soft muted colors, simple materials; slightly exaggerated, believable proportions; fitting a small dinosaur's living space.\n\nModel Requirements: only the requested object, no environment, floor, walls, background or props; whole object visible; clean coherent mesh, moderate detail, no thin/fragile geometry; appropriate proportions, recognizable construction; centered on geometric center, main axis on Y; textured, game-ready.\n\nObject: A wall-mounted hoop with a backboard, an orange metal rim and a hanging net, made for indoor play.\nSize Reference: about 1.0 m wide, 0.1 m deep, 0.7 m tall",
+    "normalizedId": "basketball_hoop",
+    "behavior": "Play",
+    "placementKind": "Wall",
+    "sizeClass": "Medium",
+    "placement": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "yawDegrees": 90.0,
+    "size": {
+        "x": 0.550000011920929,
+        "y": 0.949999988079071,
+        "z": 0.550000011920929
+    },
+    "aiModel": "",
+    "targetPolycount": 30000,
+    "shouldRemesh": true,
+    "enableTexture": true,
+    "textureResolution": "2k",
+    "modelType": "",
+    "textureModel": "",
+    "enablePbr": true,
+    "generationFingerprint": "v2||30000|True|True|2k|b4b2c83be161a79c",
+    "previewTaskId": "01a1deff-9a70-7548-bafb-d53b70bbd02e",
+    "refineTaskId": "01a1df00-503c-7278-8b5b-28407c590a36",
+    "styleId": "cozy-unfinished-apartment",
+    "styleVersion": 2,
+    "styleFingerprint": "b4b2c83be161a79c",
+    "promptTrimmed": false,
+    "promptTrimNote": "",
+    "glbBytes": 8945020,
+    "createdAtUtc": "2026-11-15T11:39:26.4248683Z",
+    "cacheOrigin": "generated-local",
+    "seededFromProjectMirrorAtUtc": "",
+    "mirrorSyncedAtUtc": "2026-11-15T11:39:26.4345492Z",
+    "mirrorBytes": 8945020,
+    "mirrorConflictNote": ""
+}

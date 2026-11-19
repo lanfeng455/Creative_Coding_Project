@@ -1,0 +1,39 @@
+{
+    "objectName": "bracket plant",
+    "prompt": "A stylized 3D game asset for a cozy, unfinished apartment interior.\n\nVisual Style: charming, whimsical indie look; clean stylized silhouettes; soft muted colors, simple materials; slightly exaggerated, believable proportions; fitting a small dinosaur's living space.\n\nModel Requirements: only the requested object, no environment, floor, walls, background or props; whole object visible; clean coherent mesh, moderate detail, no thin/fragile geometry; appropriate proportions, recognizable construction; centered on geometric center, main axis on Y; textured, game-ready.\n\nObject: A chlorophytum houseplant with arching narrow green leaves, often striped, growing in a simple round pot.\nSize Reference: about 0.5 m wide, 0.4 m deep, 0.6 m tall",
+    "normalizedId": "bracket_plant",
+    "behavior": "Ignore",
+    "placementKind": "Ground",
+    "sizeClass": "Medium",
+    "placement": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "yawDegrees": 90.0,
+    "size": {
+        "x": 0.550000011920929,
+        "y": 0.949999988079071,
+        "z": 0.550000011920929
+    },
+    "aiModel": "",
+    "targetPolycount": 30000,
+    "shouldRemesh": true,
+    "enableTexture": true,
+    "textureResolution": "2k",
+    "generationFingerprint": "v2||30000|True|True|2k|b4b2c83be161a79c",
+    "previewTaskId": "01a1dea9-2bf5-7755-916e-22af89910fbc",
+    "refineTaskId": "01a1deaa-0044-7004-b4fa-4c7a3fab8a96",
+    "styleId": "cozy-unfinished-apartment",
+    "styleVersion": 2,
+    "styleFingerprint": "b4b2c83be161a79c",
+    "promptTrimmed": false,
+    "promptTrimNote": "",
+    "glbBytes": 6806512,
+    "createdAtUtc": "2026-11-15T10:04:36.7354826Z",
+    "cacheOrigin": "generated-local",
+    "seededFromProjectMirrorAtUtc": "",
+    "mirrorSyncedAtUtc": "2026-11-15T10:04:36.7435898Z",
+    "mirrorBytes": 6806512,
+    "mirrorConflictNote": ""
+}
