@@ -64,6 +64,8 @@ public class BasketHoop : MonoBehaviour
     [Header("庆祝")]
     [Tooltip("进球后触发的泡泡奖励（可留空）")]
     public BubbleReward bubbleReward;
+    [Tooltip("进球后交给「吹泡泡奖励」过场控制器；留空会自动在场景里找。找不到就退回旧的直接发泡泡")]
+    public PrototypeC.DinoBubbleSequence sequence;
     [Tooltip("文字雨暂停/礼花持续的时间（秒）")]
     public float celebrateSeconds = 1.6f;
     [Tooltip("礼花颜色 A")]
@@ -74,6 +76,10 @@ public class BasketHoop : MonoBehaviour
     public int confettiCount = 90;
     [Tooltip("礼花粒子大小（世界单位）")]
     public float confettiSize = 0.12f;
+
+    [Header("重复计分保护")]
+    [Tooltip("进球后，这颗球要重新升到筐口上方这么高，才允许再次计分（防止同一颗球反复触发奖励）")]
+    public float scoreUnlockHeight = 0.6f;
 
     [Header("快速测试：一键投篮（Play 模式）")]
     [Tooltip("是否启用下面的快捷键")]
@@ -89,6 +95,7 @@ public class BasketHoop : MonoBehaviour
     private readonly List<BallFormController> _stale = new List<BallFormController>();
     private readonly Dictionary<BallFormController, bool> _wasUpper = new Dictionary<BallFormController, bool>();
     private readonly List<BallFormController> _staleUpper = new List<BallFormController>();
+    private readonly HashSet<BallFormController> _scored = new HashSet<BallFormController>();
 
     private int _misses;
     private bool _missArmed;
@@ -116,6 +123,7 @@ public class BasketHoop : MonoBehaviour
     {
         // 场景里的 bubbleReward 引用是 none：自动在场景里找一次，避免奖励静默丢失
         ResolveBubbleReward();
+        if (sequence == null) sequence = FindObjectOfType<PrototypeC.DinoBubbleSequence>();
     }
 
     private void ResolveBubbleReward()
@@ -124,6 +132,14 @@ public class BasketHoop : MonoBehaviour
         bubbleReward = FindObjectOfType<BubbleReward>();
         if (bubbleReward != null)
             Debug.LogWarning("[Basket] 篮筐的 bubbleReward 未在 Inspector 里连接，已在场景中自动找到 BubbleReward 组件");
+    }
+
+    private void OnEnable()
+    {
+        // 奖励过场期间本组件被禁用，恢复时 _lastY 还是过场前的位置，
+        // 会误判成「刚刚向下穿过了筐口」，先把追踪清空，避免恢复瞬间又进一球。
+        _lastY.Clear();
+        _wasUpper.Clear();
     }
 
     private void Update()
@@ -159,6 +175,7 @@ public class BasketHoop : MonoBehaviour
         foreach (var kv in _lastY)
             if (kv.Key == null) _stale.Add(kv.Key);
         for (int i = 0; i < _stale.Count; i++) _lastY.Remove(_stale[i]);
+        _scored.RemoveWhere(b => b == null);
 
         for (int i = 0; i < balls.Count; i++)
         {
@@ -171,6 +188,15 @@ public class BasketHoop : MonoBehaviour
             float lastY;
             bool had = _lastY.TryGetValue(ball, out lastY);
             _lastY[ball] = p.y;
+
+            // 已计分的球：在网里来回碰、或过场后恢复物理时都会再次「向下穿过筐口」，
+            // 必须等它重新升到筐口上方足够高才解锁，否则会无限触发奖励。
+            if (_scored.Contains(ball))
+            {
+                if (p.y > RimY + scoreUnlockHeight) _scored.Remove(ball);
+                continue;
+            }
+
             if (!had) continue;
 
             float vy = ball.Velocity.y;
@@ -342,13 +368,28 @@ public class BasketHoop : MonoBehaviour
         _misses = 0;
         _missArmed = false;
         _playerLaunches = 0;   // 进球 → 玩家成功了，恐龙下轮重新从「拦截」开始守门
+        _scored.Add(ball);     // 同一颗球在重新升到筐口上方之前不会再计分
         Debug.Log($"[Basket] 进球！球心 {ball.transform.position} 向下穿过筐口（rim y={RimY:F2}, 半宽={rimHalfWidth:F2}）");
 
-        // 奖励优先：先把泡泡起起来，后面的礼花/文字雨无论出什么异常都不影响发奖
+        // 新流程：礼花 + 暂停 + 泡泡水降落 + 恐龙过场 + 吹泡泡奖励，全部交给过场控制器
+        if (sequence != null && sequence.CanPlay)
+        {
+            sequence.Play();
+            return;
+        }
+
+        // 兜底（场景里没有过场控制器）：保持旧的「直接发泡泡 + 礼花」
         ResolveBubbleReward();
         if (bubbleReward != null) bubbleReward.Show();
         else Debug.LogError("[Basket] 进球但泡泡奖励无法启动：篮筐的 bubbleReward 未连接，且场景里找不到 BubbleReward 组件");
         Celebrate();
+    }
+
+    /// <summary>供奖励过场等外部玩法复用同一套礼花（不会影响本组件的进球/计数逻辑）。</summary>
+    public void PlayConfettiNow()
+    {
+        try { SpawnConfetti(); }
+        catch (System.Exception e) { Debug.LogWarning($"[Basket] 礼花播放失败（已忽略）：{e.Message}"); }
     }
 
     private void OnMiss()
@@ -443,7 +484,9 @@ public class BasketHoop : MonoBehaviour
         // 清状态：结束「无视上层地板」的穿板窗口、速度整体覆盖（含水平残余）、强制回实体形态
         if (target.ball != null) target.ball.IgnoreUpperFloorFor(0f);
         target.ForceSolidForm();
+        _scored.Remove(target);   // 快速测试：允许这颗球重新计分
         target.transform.position = new Vector3(drop.x, drop.y, target.transform.position.z);
+        _lastY[target] = drop.y;
         target.Launch(new Vector2(0f, -downSpeed));
 
         Debug.Log($"[Basket] 快速投篮：球重置到筐口正上方 ({drop.x:F2}, {drop.y:F2})，" +

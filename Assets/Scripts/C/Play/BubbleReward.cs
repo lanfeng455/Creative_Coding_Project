@@ -12,6 +12,7 @@
 //      keepSeconds = 0（默认）时永久保留，再次进球叠加新泡泡，旧泡泡不销毁；
 //   7. 多个泡泡并存：每个泡泡各自 new Material + 各自快照 Texture2D，互不串图。
 
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Mediapipe.Unity;
@@ -48,6 +49,14 @@ public class BubbleReward : MonoBehaviour
     [Tooltip("泡泡整体不透明度")]
     [Range(0f, 1f)]
     public float bubbleAlpha = 0.9f;
+
+    [Header("新流程（吹泡泡奖励）")]
+    [Tooltip("倒计时数字改由这个 UI 文本显示；留空则用世界空间数字")]
+    public TMP_Text countdownUI;
+    [Tooltip("点击泡泡戳破（旧玩法）。新流程会关掉它，改用指尖二选一")]
+    public bool clickToPopEnabled = true;
+    [Tooltip("倒计时结束时是否自动恢复文字雨。新流程自己控制在「泡泡升到天花板」之后再恢复")]
+    public bool autoResumeRain = true;
 
     [Header("拍照")]
     [Tooltip("照片宽度（像素）；高度按摄像头画面宽高比自动算，再用下面的高度封顶")]
@@ -91,6 +100,34 @@ public class BubbleReward : MonoBehaviour
     private Bubble _session;
     private B2BackgroundRain _rain;
 
+    /// <summary>泡泡当前所处的阶段（新奖励流程用；旧 Show() 直接进 Counting）。</summary>
+    private enum Phase { None, Growing, Counting, AwaitingChoice }
+
+    private Phase _phase = Phase.None;
+    private bool _awaitChoice;   // true = 新流程：拍完照后等玩家二选一；false = 旧流程：拍完直接收尾
+    private float _growT;
+    private float _growDuration;
+    private float _growFromDiameter;
+    private float _growToDiameter;
+    private Bubble _rising;   // 已「保留」、正在上升的泡泡（用来判断是否升到天花板）
+
+    /// <summary>倒计时结束、已定格，接下来等玩家选「保留 / 不保留」。</summary>
+    public event System.Action CountdownCompleted;
+
+    /// <summary>当前是否在等玩家选择。</summary>
+    public bool IsAwaitingChoice => _session != null && _phase == Phase.AwaitingChoice;
+
+    /// <summary>上一次「保留」的泡泡是否已经升到天花板（新流程据此恢复游戏）。</summary>
+    public bool ReachedCeiling
+    {
+        get
+        {
+            if (_rising == null || _rising.root == null) return false;
+            float topLimit = 5.2f - 0.6f - _rising.topOffset;
+            return _rising.root.transform.position.y >= topLimit - 0.03f;
+        }
+    }
+
     private ImageSource _imageSource;
     private Texture _feedTexture;
     private Texture2D _placeholder;
@@ -117,6 +154,7 @@ public class BubbleReward : MonoBehaviour
         _rain = _rain != null ? _rain : FindObjectOfType<B2BackgroundRain>();
         if (_rain != null) _rain.Suspend(this);
 
+        _awaitChoice = false;   // 旧流程：拍照后直接收尾，不等玩家选择
         Bubble bubble = CreateBubble(bubbleShader);
         _session = bubble;
 
@@ -132,6 +170,96 @@ public class BubbleReward : MonoBehaviour
 
         Debug.Log($"[Bubble] 泡泡出现：{countdownSeconds:F0} 秒内点击可戳破取消，到点自动拍照；" +
                   $"当前画面上共有 {_bubbles.Count} 个泡泡");
+    }
+
+    /// <summary>
+    /// 新流程：在指定世界坐标生成泡泡，并由小长大到 bubbleRadius*2；
+    /// 长大结束后自动进入倒计时（原地不动，不响应点击戳破）。
+    /// </summary>
+    public void ShowGrowing(Vector3 worldPos, float startDiameter, float growSeconds)
+    {
+        if (IsActive)
+        {
+            Debug.LogWarning("[Bubble] 上一个泡泡还没结束，ShowGrowing 被忽略");
+            return;
+        }
+
+        if (!ValidateBeforeShow(out Shader bubbleShader)) return;
+
+        _rain = _rain != null ? _rain : FindObjectOfType<B2BackgroundRain>();
+        // 新流程（autoResumeRain=false）里由 DinoBubbleSequence 统一暂停/恢复文字雨，
+        // 这里不能再以 BubbleReward 的身份挂一个永不解除的暂停。
+        if (autoResumeRain && _rain != null) _rain.Suspend(this);
+
+        Bubble bubble = CreateBubble(bubbleShader, worldPos);
+        _session = bubble;
+        _phase = Phase.Growing;
+        _awaitChoice = true;    // 新流程：倒计时结束后等玩家选「保留 / 不保留」
+        _growFromDiameter = Mathf.Max(0.02f, startDiameter);
+        _growToDiameter = Mathf.Max(_growFromDiameter, bubbleRadius * 2f);
+        _growDuration = Mathf.Max(0.05f, growSeconds);
+        _growT = 0f;
+        _rising = null;
+
+        if (bubble.sphere != null) bubble.sphere.localScale = Vector3.one * _growFromDiameter;
+        if (bubble.countdown != null) bubble.countdown.gameObject.SetActive(false);
+        if (countdownUI != null) countdownUI.gameObject.SetActive(false);
+
+        RefreshFeed(logProblems: false, out _);
+        ApplyFeedTo(bubble);
+
+        if (!ValidateSpawned(bubble))
+        {
+            FinishSession(cancelled: true);
+            return;
+        }
+
+        Debug.Log($"[Bubble] 吹泡泡奖励：从 ({worldPos.x:F2}, {worldPos.y:F2}) 开始，" +
+                  $"直径 {_growFromDiameter:F2} → {_growToDiameter:F2}（{_growDuration:F2} 秒），随后倒计时");
+    }
+
+    /// <summary>玩家选择「保留」：走原有缩小上升流程。</summary>
+    public void KeepCurrent()
+    {
+        if (_session == null || _phase != Phase.AwaitingChoice) return;
+        _phase = Phase.None;
+        FinishSession(cancelled: false);
+    }
+
+    /// <summary>玩家选择「不保留」：泡泡缩小消失，然后恢复文字雨。</summary>
+    public void DiscardCurrent()
+    {
+        Bubble bubble = _session;
+        if (bubble == null || _phase != Phase.AwaitingChoice) return;
+
+        _phase = Phase.None;
+        _session = null;
+        if (bubble.countdown != null) bubble.countdown.gameObject.SetActive(false);
+        if (countdownUI != null) countdownUI.gameObject.SetActive(false);
+
+        StartCoroutine(PopAndRelease(bubble));
+    }
+
+    private IEnumerator PopAndRelease(Bubble bubble)
+    {
+        Vector3 start = bubble.sphere != null ? bubble.sphere.localScale : Vector3.one;
+        float alpha0 = bubbleAlpha;
+        float t = 0f;
+        const float dur = 0.32f;
+
+        while (t < dur)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / dur);
+            if (bubble.sphere != null) bubble.sphere.localScale = Vector3.Lerp(start, Vector3.zero, k);
+            if (bubble.material != null) bubble.material.SetFloat("_Alpha", Mathf.Clamp01(alpha0 * (1f - k)));
+            yield return null;
+        }
+
+        if (autoResumeRain && _rain != null) _rain.Resume(this);
+        ReleaseBubble(bubble);
+        _bubbles.Remove(bubble);
+        Debug.Log("[Bubble] 玩家选择不保留：泡泡缩小消失");
     }
 
     /// <summary>
@@ -261,21 +389,65 @@ public class BubbleReward : MonoBehaviour
             return;
         }
 
-        // 从泡泡机位置升到画面正中（没有泡泡机时直接就在正中）
+        // —— 新流程：先从小长大，长大完才开始倒计时 ——
+        if (_phase == Phase.Growing)
+        {
+            _growT += dt;
+            float k = Mathf.Clamp01(_growT / _growDuration);
+            float eased = 1f - Mathf.Pow(1f - k, 3f);
+            float d = Mathf.Lerp(_growFromDiameter, _growToDiameter, eased);
+            if (bubble.sphere != null) bubble.sphere.localScale = Vector3.one * d;
+
+            if (k >= 1f)
+            {
+                _phase = Phase.Counting;
+                bubble.timeLeft = Mathf.Max(0.1f, countdownSeconds);
+                if (bubble.countdown != null)
+                {
+                    bubble.countdown.gameObject.SetActive(countdownUI == null);
+                    bubble.countdown.text = Mathf.CeilToInt(bubble.timeLeft).ToString();
+                }
+                if (countdownUI != null)
+                {
+                    countdownUI.gameObject.SetActive(true);
+                    countdownUI.text = Mathf.CeilToInt(bubble.timeLeft).ToString();
+                }
+                Debug.Log($"[Bubble] 泡泡长大完成，开始 {countdownSeconds:F0} 秒倒计时");
+            }
+            return;
+        }
+
+        // —— 已定格、等玩家二选一 ——
+        if (_phase == Phase.AwaitingChoice)
+        {
+            if (bubble.sphere != null)
+            {
+                float breathe = _growToDiameter * (1f + Mathf.Sin(Time.time * 2.2f) * 0.012f);
+                bubble.sphere.localScale = Vector3.one * breathe;
+            }
+            return;
+        }
+
+        // 从泡泡机位置升到画面正中（没有泡泡机 / 新流程指定坐标时直接就在目标点）
         bubble.riseT = Mathf.MoveTowards(bubble.riseT, 1f, dt / 0.35f);
         bubble.root.transform.position = Vector3.Lerp(bubble.spawnPos, bubble.center, bubble.riseT);
 
         bubble.timeLeft -= dt;
         int shown = Mathf.Max(0, Mathf.CeilToInt(bubble.timeLeft));
-        if (bubble.countdown != null)
+        if (countdownUI != null)
+        {
+            string uiText = shown.ToString();
+            if (countdownUI.text != uiText) countdownUI.text = uiText;
+        }
+        else if (bubble.countdown != null)
         {
             string text = shown.ToString();
             if (bubble.countdown.text != text) bubble.countdown.text = text;
         }
 
-        // 点击 / 触摸：点到泡泡上 = 提前戳破，取消奖励（这个泡泡不定格，继续实时画面）
+        // 点击 / 触摸：点到泡泡上 = 提前戳破，取消奖励（新流程里会关掉这条分支）
         Vector2 screenPos;
-        if (TryGetPointerDown(out screenPos) && HitBubble(bubble, screenPos))
+        if (clickToPopEnabled && TryGetPointerDown(out screenPos) && HitBubble(bubble, screenPos))
         {
             Debug.Log("[Bubble] 玩家戳破泡泡 → 取消奖励（这个泡泡继续实时显示并永久飘在上方）");
             FinishSession(cancelled: true);
@@ -285,7 +457,22 @@ public class BubbleReward : MonoBehaviour
         if (bubble.timeLeft <= 0f)
         {
             CapturePhoto(bubble);
-            FinishSession(cancelled: false);
+
+            if (!_awaitChoice)
+            {
+                // 旧流程：拍完照直接收尾（缩小上升）
+                FinishSession(cancelled: false);
+                return;
+            }
+
+            // 新流程：拍照定格后不结束，停下来等玩家选「保留 / 不保留」
+            _phase = Phase.AwaitingChoice;
+
+            if (bubble.countdown != null) bubble.countdown.gameObject.SetActive(false);
+            if (countdownUI != null) countdownUI.gameObject.SetActive(false);
+
+            Debug.Log("[Bubble] 倒计时结束：已拍照定格，等待玩家选择是否保留");
+            CountdownCompleted?.Invoke();
         }
     }
 
@@ -396,9 +583,14 @@ public class BubbleReward : MonoBehaviour
 
         bubble.active = false;
         if (bubble.countdown != null) bubble.countdown.gameObject.SetActive(false);
+        if (countdownUI != null) countdownUI.gameObject.SetActive(false);
 
-        // 关键：无论自动拍照、戳破、异常中断，都在这里恢复雨（B2BackgroundRain 按 0.8s 渐进恢复）
-        if (_rain != null) _rain.Resume(this);
+        _phase = Phase.None;
+        _awaitChoice = false;
+
+        // 关键：无论自动拍照、戳破、异常中断，都在这里恢复雨（B2BackgroundRain 按 0.8s 渐进恢复）。
+        // 新流程会把 autoResumeRain 关掉，等泡泡升到天花板后再自己恢复。
+        if (autoResumeRain && _rain != null) _rain.Resume(this);
 
         if (bubble.root != null)
         {
@@ -408,6 +600,7 @@ public class BubbleReward : MonoBehaviour
             bubble.floatT = 0f;
             bubble.driftSeed = Random.Range(0f, 100f);
             bubble.topOffset = Random.Range(0f, 0.9f);   // 多个泡泡停在不同高度，避免完全重叠
+            _rising = bubble;                            // 供新流程判断「升到天花板」
         }
 
         _session = null;
@@ -442,12 +635,22 @@ public class BubbleReward : MonoBehaviour
         return mainCamera.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 10f));
     }
 
-    private Bubble CreateBubble(Shader bubbleShader)
+    private Bubble CreateBubble(Shader bubbleShader, Vector3? worldPos = null)
     {
         var bubble = new Bubble();
-        bubble.center = ViewCenter();
-        bubble.spawnPos = bubbleMachine != null ? bubbleMachine.position + Vector3.up * 0.4f : bubble.center;
-        bubble.riseT = bubbleMachine != null ? 0f : 1f;
+        if (worldPos.HasValue)
+        {
+            // 新流程：泡泡就在指定位置原地长大，不做「从泡泡机升到画面中央」的位移
+            bubble.center = worldPos.Value;
+            bubble.spawnPos = worldPos.Value;
+            bubble.riseT = 1f;
+        }
+        else
+        {
+            bubble.center = ViewCenter();
+            bubble.spawnPos = bubbleMachine != null ? bubbleMachine.position + Vector3.up * 0.4f : bubble.center;
+            bubble.riseT = bubbleMachine != null ? 0f : 1f;
+        }
         bubble.timeLeft = Mathf.Max(0.1f, countdownSeconds);
         bubble.active = true;
         bubble.frozen = false;
@@ -478,6 +681,7 @@ public class BubbleReward : MonoBehaviour
         {
             renderer.sharedMaterial = bubble.material;
             renderer.enabled = true;
+            renderer.sortingOrder = 510;   // 压过奖励面板的压暗层(500)与大恐龙(501)
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
         }
@@ -485,6 +689,8 @@ public class BubbleReward : MonoBehaviour
         bubble.countdown = B1Text.Make("BubbleCountdown", bubble.root.transform, countdownFontSize, countdownColor, 20);
         bubble.countdown.transform.localPosition = new Vector3(0f, 0f, -0.4f);
         bubble.countdown.text = Mathf.CeilToInt(bubble.timeLeft).ToString();
+        // 新流程要等「长大完成」才开始显示倒计时，而且通常会改用 UI 文本
+        bubble.countdown.gameObject.SetActive(worldPos == null && countdownUI == null);
 
         _bubbles.Add(bubble);
         return bubble;

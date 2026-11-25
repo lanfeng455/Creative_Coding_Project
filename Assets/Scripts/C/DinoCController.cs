@@ -83,6 +83,39 @@ namespace PrototypeC
         public float restBedYOffset = 0.02f;
         public float restBedApproachPadding = 0.08f;
 
+        // —— 状态图标（内容 Sprite 由手绘替换；留空自动挂组件并用内置占位图）——
+        [Tooltip("状态图标组件；留空自动挂到恐龙身上（占位图），手绘 Sprite 请手动挂 DinoStatusIcon 并填好")]
+        public DinoStatusIcon statusIcon;
+        public float iconNoticeDuration = 1.2f;
+        public float iconCuriousDuration = 2.5f;
+        public float iconHappyDuration = 1.4f;
+        public float iconThinkDuration = 1.6f;
+
+        // —— 精力（疲惫 ≠ 睡眠：疲惫是持续图标，睡眠只在真正躺下睡着后出现）——
+        [Range(0f, 1f)] public float energy = 1f;
+        [Tooltip("漫步耗精力（/秒）")]
+        public float energyDrainWander = 0.010f;
+        [Tooltip("互动耗精力（/秒），玩耍蹦跳更累")]
+        public float energyDrainInteract = 0.022f;
+        [Tooltip("躺着没睡着的恢复（/秒）")]
+        public float energyRecoverLying = 0.030f;
+        [Tooltip("睡着后的恢复（/秒）")]
+        public float energyRecoverAsleep = 0.065f;
+        [Tooltip("低于这个值显示疲惫图标，并提高休息倾向")]
+        [Range(0f, 1f)] public float tiredThreshold = 0.30f;
+        [Tooltip("睡到这个值自然醒")]
+        [Range(0f, 1f)] public float restedThreshold = 0.97f;
+        [Tooltip("疲惫时休息权重的基础加成倍数")]
+        public float tiredRestWeightBonus = 2.5f;
+
+        // —— 兴趣与偏好 ——
+        [Tooltip("非喜欢物件互动过这么多次后不再主动选它（玩腻）")]
+        public int boredAfterInteractions = 4;
+        [Tooltip("好感度达到这个值算「喜欢」（♥ + 更高选择倾向）")]
+        public float likeAffinityThreshold = 1f;
+        [Tooltip("刚结束互动的物件，这么久之内不马上重复选它")]
+        public float sameItemRetryDelay = 18f;
+
         // —— 场景遗留气泡：C 阶段不索要任何词，只负责把它隐藏 ——
         public TextMeshPro bubble;
 
@@ -199,10 +232,45 @@ namespace PrototypeC
         private RoomOccupancy _occupancy;
 
         private float _externalTargetX, _externalHoldUntil, _externalHopCd;
+        private bool _externalFreeMove;   // 奖励过场用：允许走到活动范围外（走出画面 / 从画面外回来）
+        private bool _externalLocked;     // 脚本接管期间冻结自主决策（不会躺下休息 / 互动 / 被新物件打断）
+        private Coroutine _externalRoutine;
+
+        // —— 本轮新增：状态图标 / 精力 / 兴趣记忆 ——
+        private bool _asleep;
+        private bool _idleNotified;
+        private string _lastItemId = string.Empty;
+        private float _lastInteractEndTime = -999f;
+
+        /// <summary>每个物件的兴趣记忆：互动次数（玩腻判定）与好感度（喜欢判定）。</summary>
+        private class ItemMemory
+        {
+            public int interactions;
+            public float affinity;
+        }
+
+        private readonly System.Collections.Generic.Dictionary<string, ItemMemory> _memory =
+            new System.Collections.Generic.Dictionary<string, ItemMemory>();
+
+        private ItemMemory MemoryFor(PlacedItem item)
+        {
+            if (item == null || string.IsNullOrEmpty(item.id)) return new ItemMemory();
+            if (!_memory.TryGetValue(item.id, out ItemMemory mem))
+            {
+                mem = new ItemMemory();
+                _memory[item.id] = mem;
+            }
+
+            return mem;
+        }
+
+        private bool IsLiked(ItemMemory mem) => mem != null && mem.affinity >= likeAffinityThreshold;
 
         private void Start()
         {
             if (bubble != null) bubble.gameObject.SetActive(false);
+
+            if (statusIcon == null) statusIcon = DinoStatusIcon.EnsureAttached(gameObject);
 
             ResolveGroundZones();
 
@@ -236,8 +304,10 @@ namespace PrototypeC
             _restCooldown -= dt;
             _interactCooldown -= dt;
 
+            UpdateEnergyIfAllowed(dt);
+
             // 挂起的新物件：回到自主漫步、且外部玩法不再占用时优先响应
-            if (_pendingNewItem != null && _state == CState.Wandering
+            if (!_externalLocked && _pendingNewItem != null && _state == CState.Wandering
                 && Time.time >= _externalHoldUntil)
             {
                 TryConsumePendingItem();
@@ -256,6 +326,48 @@ namespace PrototypeC
         }
 
         /// <summary>
+        /// 精力循环：互动/漫步消耗，躺下恢复（睡着更快）；同步「疲惫 / 睡眠」两个持续图标。
+        /// 睡眠 = Resting 且躺平进度过半；疲惫 = energy 低于阈值。两者不合并。
+        /// </summary>
+        private void UpdateEnergy(float dt)
+        {
+            if (_state == CState.Resting)
+            {
+                bool lying = _lieEase > 0.6f;
+                energy = Mathf.Min(1f, energy + (lying ? energyRecoverAsleep : energyRecoverLying) * dt);
+            }
+            else
+            {
+                float drain = _state == CState.Interacting ? energyDrainInteract : energyDrainWander;
+                energy = Mathf.Max(0f, energy - drain * dt);
+            }
+
+            bool asleepNow = _state == CState.Resting && _lieEase > 0.6f;
+            if (asleepNow != _asleep)
+            {
+                _asleep = asleepNow;
+                if (_asleep) Debug.Log("[DinoC] 睡着了（ZZZ）");
+                else Debug.Log("[DinoC] 醒了");
+            }
+
+            // 持续图标唯一入口：睡眠 > 疲惫 > 无（同一时间最多一个持续图标，防止闪烁）
+            if (statusIcon != null)
+            {
+                if (_asleep) statusIcon.ShowPersistent(DinoIconType.Sleep);
+                else if (energy < tiredThreshold) statusIcon.ShowPersistent(DinoIconType.Tired);
+                else statusIcon.HidePersistent();
+            }
+
+            // 精力耗尽：正在互动就收手，就地休息（不打断已睡着的）
+            if (energy <= 0.001f && _state != CState.Resting)
+            {
+                Debug.Log("[DinoC] 精力耗尽，停下来休息");
+                if (_state == CState.Interacting) ExitInteraction("太累了，玩不动了");
+                else EnterResting();
+            }
+        }
+
+        /// <summary>
         /// 躺下动画：Resting 且贴地 → 躺平进度奔 1；其余状态平滑爬起。
         /// 旋转在 ApplyVisual 应用；地面高度按进度抬升（ApplyMotion）。
         /// </summary>
@@ -269,7 +381,7 @@ namespace PrototypeC
             _lieEase = _lieT * _lieT * (3f - 2f * _lieT);
         }
 
-        /// <summary>按权重挑下一个念头：发呆 / 休息 / 找物件互动。找不到可互动对象时把互动权重让给发呆。</summary>
+        /// <summary>按权重挑下一个念头：发呆 / 休息 / 找物件互动。精力低时休息倾向升、互动倾向降。</summary>
         private void PickMood()
         {
             _timer = 0f;
@@ -277,9 +389,13 @@ namespace PrototypeC
                 Mathf.Min(moodInterval.x, moodInterval.y),
                 Mathf.Max(moodInterval.x, moodInterval.y));
 
+            float tiredBoost = 1f + Mathf.Max(0f, tiredThreshold - energy)
+                / Mathf.Max(0.01f, tiredThreshold) * tiredRestWeightBonus;
+            float energyFactor = Mathf.Lerp(0.25f, 1f, energy);
+
             float wWander = Mathf.Max(0f, wanderWeight);
-            float wRest = _restCooldown <= 0f ? Mathf.Max(0f, restWeight) : 0f;
-            float wInteract = _interactCooldown <= 0f ? Mathf.Max(0f, interactWeight) : 0f;
+            float wRest = _restCooldown <= 0f ? Mathf.Max(0f, restWeight) * tiredBoost : 0f;
+            float wInteract = _interactCooldown <= 0f ? Mathf.Max(0f, interactWeight) * energyFactor : 0f;
 
             if (wInteract > 0f && FindInteractItem() == null) wInteract = 0f;
 
@@ -305,14 +421,19 @@ namespace PrototypeC
             PickWanderTarget();
         }
 
-        /// <summary>在已登记占位的地面物件里，挑一个横向最近、有场景实例的作为互动对象。</summary>
+        /// <summary>
+        /// 在已登记占位的地面物件里挑互动对象（不再单纯取最近）：
+        /// 评分 = 距离衰减 ×（好感加成 + 新奇加成 − 重复惩罚）；
+        /// 玩腻（互动多次且不喜欢）与刚玩过的物件直接跳过。
+        /// </summary>
         private PlacedItem FindInteractItem()
         {
             if (_occupancy == null) _occupancy = FindObjectOfType<RoomOccupancy>();
             if (_occupancy == null) return null;
 
             PlacedItem best = null;
-            float bestDistance = Mathf.Max(0.1f, interactNoticeRange);
+            float bestScore = 0f;
+            float noticeRange = Mathf.Max(0.1f, interactNoticeRange);
 
             foreach (PlacedItem item in _occupancy.Items)
             {
@@ -321,9 +442,26 @@ namespace PrototypeC
                 if (item.band != RoomBand.Ground) continue;
 
                 float distance = Mathf.Abs(item.instance.transform.position.x - transform.position.x);
-                if (distance < bestDistance)
+                if (distance > noticeRange) continue;
+
+                ItemMemory mem = MemoryFor(item);
+                bool liked = IsLiked(mem);
+
+                // 玩腻：互动过很多次又没形成喜欢 → 放弃探索
+                if (!liked && mem.interactions >= boredAfterInteractions) continue;
+
+                // 刚玩过、又不算特别喜欢 → 一段时间内不重复
+                if (!liked && item.id == _lastItemId && Time.time - _lastInteractEndTime < sameItemRetryDelay) continue;
+
+                float score = 1f / (1f + distance)
+                    * (1f + mem.affinity * 0.8f)
+                    * (mem.interactions == 0
+                        ? 1.8f
+                        : Mathf.Max(0.25f, 1f - mem.interactions * 0.22f));
+
+                if (score > bestScore)
                 {
-                    bestDistance = distance;
+                    bestScore = score;
                     best = item;
                 }
             }
@@ -345,6 +483,9 @@ namespace PrototypeC
             if (!newItemResponse) return;
             if (!ItemReachable(item)) return;
             if (_interactItem != null && _interactItem.id == item.id) return;
+
+            // 注意到新事物：不管接下来是立刻响应还是先挂起，「!」都先冒一下
+            statusIcon?.Show(DinoIconType.Notice, iconNoticeDuration);
 
             // 正在互动且还没过防抖窗口 → 只记下最新的一个，等当前互动结束再响应
             if (_state == CState.Interacting && Time.time - _interactStartedAt < newTargetMinInterval)
@@ -415,6 +556,11 @@ namespace PrototypeC
                     break;
             }
 
+            // 图标：喜欢 → ♥（互动期间显示）；没见过的物件 → ?（好奇，短暂）
+            ItemMemory mem = MemoryFor(item);
+            if (IsLiked(mem)) statusIcon?.Show(DinoIconType.Love, _stateDur + 1.5f);
+            else if (mem.interactions == 0) statusIcon?.Show(DinoIconType.Curious, iconCuriousDuration);
+
             if (fromNotification)
                 Debug.Log($"[DinoC] 新物件响应：{item.objectName}（{item.behavior}）→ {DescribeInteraction(item.behavior)}");
         }
@@ -474,6 +620,7 @@ namespace PrototypeC
                 _pushPraised = true;
                 if (_vy <= 0.01f) _vy = hopForce * 1.6f;   // 推动了！开心跳一下
                 AudioManager.PlayAt(Sfx.DinoVoice, transform.position);
+                statusIcon?.Show(DinoIconType.Happy, iconHappyDuration);   // ☺ 推动成功
             }
 
             if (_timer >= _stateDur || _pushMoved > 0.8f)
@@ -513,6 +660,16 @@ namespace PrototypeC
                 _restOnBed = true;
 
                 string name = _interactItem != null ? _interactItem.objectName : "床";
+                // 躺上床算一次成功互动：记兴趣记忆 + 好感（床最容易变成「喜欢」）
+                if (_interactItem != null)
+                {
+                    var bedMem = MemoryFor(_interactItem);
+                    bedMem.interactions++;
+                    bedMem.affinity = Mathf.Min(2f, bedMem.affinity + 0.6f);
+                    _lastItemId = _interactItem.id;
+                    _lastInteractEndTime = Time.time;
+                }
+
                 _interactItem = null;
                 _interactTarget = null;
                 _state = CState.Resting;
@@ -548,7 +705,11 @@ namespace PrototypeC
             }
 
             if (_playHopsLeft <= 0 && transform.position.y <= FootY + 0.02f)
+            {
+                statusIcon?.Show(DinoIconType.Happy, iconHappyDuration);   // ☺ 玩耍尽兴
                 ExitInteraction(string.Empty);
+                return;
+            }
 
             if (_timer >= _stateDur) ExitInteraction("玩耍超时");
         }
@@ -564,11 +725,27 @@ namespace PrototypeC
             if (_timer >= _stateDur) ExitInteraction(string.Empty);
         }
 
-        /// <summary>退出互动：清目标、进冷却；挂起队列里有更新的新物件则优先响应它。</summary>
+        /// <summary>退出互动：记兴趣记忆、进冷却；挂起队列里有更新的新物件则优先响应它。</summary>
         private void ExitInteraction(string reason)
         {
             if (!string.IsNullOrEmpty(reason))
                 Debug.Log($"[DinoC] 互动中断：{(_interactItem != null ? _interactItem.objectName : "目标")}｜{reason}");
+
+            // 兴趣记忆：互动次数 +1；有成果（推动了 / 玩完整套）则加好感 → 更容易变成「喜欢」
+            if (_interactItem != null)
+            {
+                ItemMemory mem = MemoryFor(_interactItem);
+                mem.interactions++;
+
+                bool success = _pushPraised
+                    || (_interactItem.behavior == "Play" && _playHopsLeft <= 0);
+                if (success) mem.affinity = Mathf.Min(2f, mem.affinity + 0.6f);
+
+                _lastItemId = _interactItem.id;
+                _lastInteractEndTime = Time.time;
+                Debug.Log($"[DinoC] 兴趣记忆：{_interactItem.objectName} 互动 {mem.interactions} 次，好感 {mem.affinity:0.0}" +
+                          (IsLiked(mem) ? "（喜欢 ♥）" : string.Empty));
+            }
 
             _interactCooldown = Random.Range(
                 Mathf.Min(interactCooldown.x, interactCooldown.y),
@@ -594,10 +771,20 @@ namespace PrototypeC
             if (Time.time < _externalHoldUntil)
             {
                 _desiredX = _externalTargetX;
+                _idleNotified = false;
                 return;
             }
 
             bool arrived = Mathf.Abs(transform.position.x - _desiredX) < 0.25f;
+
+            // 到站发一会呆：只冒一次「...」，继续走就复位
+            if (arrived && !_idleNotified && _timer < _stateDur)
+            {
+                _idleNotified = true;
+                statusIcon?.Show(DinoIconType.Thinking, iconThinkDuration);
+            }
+            if (!arrived) _idleNotified = false;
+
             if (arrived || _timer > _stateDur)
             {
                 if (_restCooldown <= 0f && Random.value < 0.5f)
@@ -621,8 +808,13 @@ namespace PrototypeC
 
         private void UpdateResting()
         {
+            // 睡够了自然醒：把剩余时长掐短，起身（不会被固定时长压着继续躺）
+            if (_asleep && energy >= restedThreshold && _timer < _stateDur)
+                _stateDur = _timer + 0.2f;
+
             if (_timer < _stateDur) return;
 
+            bool wokeRested = energy >= restedThreshold;
             if (_restOnBed)
             {
                 // 从床面起来：清床面标志 → groundY 变回地面 → 自由下落回地面
@@ -631,6 +823,9 @@ namespace PrototypeC
                 Debug.Log("[DinoC] Rest：从床上起来，掉落回地面");
             }
             EnterWander();
+
+            // 睡饱起身 → ☺（持续图标已由 UpdateEnergy 收掉）
+            if (wokeRested) statusIcon?.Show(DinoIconType.Happy, iconHappyDuration);
         }
 
         private void PickWanderTarget()
@@ -641,7 +836,8 @@ namespace PrototypeC
         private void ApplyMotion(float dt)
         {
             var p = transform.position;
-            float lo = ClampLo, hi = ClampHi;
+            float lo = _externalFreeMove ? -999f : ClampLo;
+            float hi = _externalFreeMove ? 999f : ClampHi;
 
             float speed = _state == CState.Resting ? 0f : walkSpeed;
 
@@ -723,23 +919,60 @@ namespace PrototypeC
             transform.localScale = new Vector3(
                 _baseScale.x / Mathf.Max(_visualY, 0.6f) * face,
                 _baseScale.y * _visualY, _baseScale.z);
-            // 休息时绕脚底旋转躺平；_lieEase 归零后恢复场景原始旋转
+            // 休息时绕脚底旋转躺平；_lieEase 归零后恢复场景原始旋转。
+            // 旋转方向 +face：头朝上坡躺（原来的 -face 会让头扎向地面，看起来像反着躺）
             transform.localRotation = Quaternion.Euler(
-                0f, 0f, _baseLocalRotation.eulerAngles.z - face * restLieAngle * _lieEase);
+                0f, 0f, _baseLocalRotation.eulerAngles.z + face * restLieAngle * _lieEase);
         }
 
         // —— 外部驱动（踩球 / 篮筐辅助；不改本控制器的自主规则）——
 
         /// <summary>C 阶段没有逃跑/搬运/建造，所以外部指令永远不被占用。</summary>
-        public bool ExternalBusy => false;
+        public bool ExternalBusy => _externalLocked;
+
+        /// <summary>脚本接管整段表演（奖励过场）：期间不做自主决策，不会睡着/躺下、不会互动、不会被新物件打断。</summary>
+        public void ExternalLock(bool locked)
+        {
+            _externalLocked = locked;
+
+            if (locked)
+            {
+                _interactItem = null;
+                _interactTarget = null;
+                _pendingNewItem = null;
+                statusIcon?.HideBrief();
+
+                _state = CState.Wandering;
+                _timer = 0f;
+                _stateDur = 999f;
+                _externalTargetX = transform.position.x;
+                _desiredX = transform.position.x;
+                _externalHoldUntil = Time.time + 999f;
+            }
+            else
+            {
+                _externalHoldUntil = 0f;
+                _timer = 0f;
+                _stateDur = Random.Range(wanderIntervalMin, wanderIntervalMax);
+                if (transform.position.y <= FootY + 0.02f) PickWanderTarget();
+            }
+        }
+
+        private void UpdateEnergyIfAllowed(float dt)
+        {
+            if (_externalLocked) return;
+            UpdateEnergy(dt);
+        }
 
         /// <summary>外部让恐龙走向某个 x（holdSeconds 秒内不会被随机漫步覆盖）。</summary>
         public void ExternalWalkTo(float x, float holdSeconds = 2.5f)
         {
-            // 外部玩法优先于物件互动：清掉互动目标再接管
+            // 外部玩法优先于物件互动：清掉互动目标再接管；短暂图标一并收起（持续图标保留）
             _interactItem = null;
             _interactTarget = null;
             _pendingNewItem = null;
+            statusIcon?.HideBrief();
+            _idleNotified = false;
 
             _externalTargetX = Mathf.Clamp(x, ClampLo, ClampHi);
             _externalHoldUntil = Time.time + Mathf.Max(0.1f, holdSeconds);
@@ -765,6 +998,107 @@ namespace PrototypeC
             if (transform.position.y > FootY + 0.02f) return;
             _vy = hopForce * Mathf.Max(0.5f, multiplier);
             _externalHopCd = Time.time + 0.5f;
+        }
+
+        /// <summary>
+        /// 奖励过场用：走出画面（dir = +1 向右 / -1 向左），走到画面外后隐藏自己并回调。
+        /// 期间绕过活动范围夹取，但仍然走正常的走路/蹦跳表现。
+        /// </summary>
+        public void ExternalLeaveScreen(int dir = 1, float padding = 2f, System.Action onDone = null)
+        {
+            if (_externalRoutine != null) StopCoroutine(_externalRoutine);
+            if (!gameObject.activeSelf) gameObject.SetActive(true);
+            _externalRoutine = StartCoroutine(LeaveScreenRoutine(dir >= 0 ? 1 : -1, padding, onDone));
+        }
+
+        private System.Collections.IEnumerator LeaveScreenRoutine(int dir, float padding, System.Action onDone)
+        {
+            _externalFreeMove = true;
+            _externalLocked = true;
+            _interactItem = null;
+            _interactTarget = null;
+            _pendingNewItem = null;
+            statusIcon?.HideBrief();
+
+            Camera cam = Camera.main;
+            float halfW = cam != null && cam.orthographic ? cam.orthographicSize * cam.aspect : 8.7f;
+            float targetX = dir * (halfW + Mathf.Max(0.2f, padding));
+
+            _externalTargetX = targetX;
+            _externalHoldUntil = Time.time + 999f;
+            _desiredX = targetX;
+            _state = CState.Wandering;
+            _timer = 0f;
+            _stateDur = 999f;
+            Face(dir);
+
+            float deadline = Time.time + 12f;
+            while (gameObject.activeSelf
+                   && Mathf.Abs(transform.position.x - targetX) > 0.35f
+                   && Time.time < deadline)
+                yield return null;
+
+            statusIcon?.HidePersistent();
+
+            _externalFreeMove = false;
+            _externalHoldUntil = 0f;
+            _externalRoutine = null;
+
+            // 先回调再隐藏：SetActive(false) 会把这个协程一起停掉
+            onDone?.Invoke();
+
+            if (gameObject.activeSelf)
+            {
+                gameObject.SetActive(false);
+                Debug.Log("[DinoC] 奖励过场：恐龙已走出画面");
+            }
+        }
+
+        /// <summary>奖励过场用：从画面外（dir 侧）走进来，走到 targetX 后交还自主漫步。</summary>
+        public void ExternalEnterFromScreen(int dir = 1, float targetX = 0f, float padding = 2f, System.Action onDone = null)
+        {
+            if (_externalRoutine != null) StopCoroutine(_externalRoutine);
+            if (!gameObject.activeSelf) gameObject.SetActive(true);
+
+            Camera cam = Camera.main;
+            float halfW = cam != null && cam.orthographic ? cam.orthographicSize * cam.aspect : 8.7f;
+            int side = dir >= 0 ? 1 : -1;
+
+            var p = transform.position;
+            p.x = side * (halfW + Mathf.Max(0.2f, padding));
+            p.y = GroundYAtX(p.x);
+            transform.position = p;
+
+            _externalFreeMove = true;
+            _externalTargetX = targetX;
+            _externalHoldUntil = Time.time + 999f;
+            _desiredX = targetX;
+            _state = CState.Wandering;
+            _timer = 0f;
+            _stateDur = 999f;
+            Face(p.x > targetX ? -1 : 1);
+
+            _externalRoutine = StartCoroutine(EnterScreenRoutine(targetX, onDone));
+        }
+
+        private System.Collections.IEnumerator EnterScreenRoutine(float targetX, System.Action onDone)
+        {
+            float deadline = Time.time + 15f;
+            while (gameObject.activeSelf
+                   && Mathf.Abs(transform.position.x - targetX) > 0.3f
+                   && Time.time < deadline)
+                yield return null;
+
+            _externalFreeMove = false;
+            _externalHoldUntil = 0f;
+            _externalRoutine = null;
+            _externalLocked = false;
+            _timer = 0f;
+            _stateDur = Random.Range(wanderIntervalMin, wanderIntervalMax);
+            if (_state == CState.Wandering) PickWanderTarget();
+
+            Debug.Log("[DinoC] 奖励过场：恐龙已回到场景，恢复自主漫步");
+            onDone?.Invoke();
         }
 
         /// <summary>是否正在下落且离地（恐龙下压球用）。</summary>

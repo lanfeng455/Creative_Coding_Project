@@ -62,6 +62,15 @@ namespace PrototypeC
         /// <summary>识别到的词（已转大写；字母同音会转成单个字母）。</summary>
         public event Action<string> WordRecognized;
 
+        /// <summary>最近一个音频块的整体音量（RMS）。吹气判定等外部玩法直接读这个值，避免再开一路麦克风。</summary>
+        public float CurrentRms { get; private set; }
+
+        /// <summary>麦克风是否已启动（吹气电平只需要它，不依赖模型）。</summary>
+        public bool IsReady => _micReady;
+
+        /// <summary>语音模型是否加载完成（只有识别才需要）。</summary>
+        public bool IsModelReady => _wrapper != null;
+
         private const string DevicePrefKey = "PrototypeC.Voice.Microphone";
         private const string VerbosePrefKey = "PrototypeC.Voice.Verbose";
 
@@ -70,7 +79,7 @@ namespace PrototypeC
         private AudioClip _clip;
         private string _device;
         private int _clipFrequency = 16000;
-        private bool _ready;
+        private bool _micReady;
 
         private readonly float[] _readBuffer = new float[8192];
         private readonly List<float> _preRoll = new List<float>();
@@ -130,15 +139,51 @@ namespace PrototypeC
                 microphoneDevice = savedDevice;
             verboseTranscript = PlayerPrefs.GetInt(VerbosePrefKey, verboseTranscript ? 1 : 0) != 0;
 
+            // 麦克风先启动：吹气判定只需要电平，不能因为模型缺失/加载失败而拿不到声音
+            StartListening();
+
             string modelPath = System.IO.Path.Combine(Application.streamingAssetsPath, modelFile);
             if (!System.IO.File.Exists(modelPath))
             {
                 Debug.LogError($"[Whisper] 找不到模型文件：{modelPath}\n" +
-                               "请把 ggml-base.en.bin 放进 Assets/StreamingAssets/Whisper/。");
+                               "请把 ggml-base.en.bin 放进 Assets/StreamingAssets/Whisper/。\n" +
+                               "（麦克风电平仍然可用：吹气判定不受影响，只有语音识别不可用）");
+                return;
+            }
+
+            if (LooksLikeLfsPointer(modelPath, out long pointerSize))
+            {
+                Debug.LogError($"[Whisper] 模型文件是 Git LFS 指针（{pointerSize} 字节），不是真模型：\n" +
+                               "  在仓库里执行 `git lfs pull`，或把真实的 ggml-base.en.bin（约 141 MB）放进 Assets/StreamingAssets/Whisper/。\n" +
+                               "（麦克风电平仍然可用：吹气判定不受影响，只有语音识别不可用）");
                 return;
             }
 
             _ = LoadModelAsync(modelPath);
+        }
+
+        /// <summary>文件名对、但内容只有一百多字节且以 "version https://git-lfs" 开头 → 未拉取的 LFS 指针。</summary>
+        private static bool LooksLikeLfsPointer(string path, out long sizeBytes)
+        {
+            sizeBytes = 0;
+            try
+            {
+                var info = new System.IO.FileInfo(path);
+                sizeBytes = info.Length;
+                if (sizeBytes > 1024) return false;
+
+                using (var stream = System.IO.File.OpenRead(path))
+                {
+                    var buffer = new byte[64];
+                    int read = stream.Read(buffer, 0, buffer.Length);
+                    string head = System.Text.Encoding.ASCII.GetString(buffer, 0, read);
+                    return head.StartsWith("version https://git-lfs", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private async Task LoadModelAsync(string modelPath)
@@ -177,7 +222,7 @@ namespace PrototypeC
                       $"文字打印={verboseTranscript}（{cycleMicrophoneKey}=换麦克风，{toggleVerboseKey}=文字打印）");
 
             LogMicrophones();
-            StartListening();
+            if (!_micReady) StartListening();
         }
 
         private void Update()
@@ -192,7 +237,7 @@ namespace PrototypeC
             }
 
             if (testWithKeyboard && Input.GetKeyDown(testKey)) Emit(testWord);
-            if (!_ready) return;
+            if (!_micReady) return;
 
             int position = Microphone.GetPosition(_device);
             if (position < 0) return;
@@ -208,21 +253,26 @@ namespace PrototypeC
                 if (chunk <= 0) break;
 
                 if (!_clip.GetData(_readBuffer, _lastPosition)) break;
-                ProcessSamples(_readBuffer, chunk);
+
+                // 电平：不依赖模型，吹气判定随时可读
+                float sum = 0f;
+                for (int i = 0; i < chunk; i++) sum += _readBuffer[i] * _readBuffer[i];
+                float rms = Mathf.Sqrt(sum / chunk);
+                CurrentRms = rms;
+
+                // 只有模型就绪才做 VAD / 断句 / 识别
+                if (_wrapper != null) ProcessSamples(_readBuffer, chunk, rms);
 
                 _lastPosition = (_lastPosition + chunk) % samples;
                 available -= chunk;
             }
         }
 
-        /// <summary>简易能量 VAD：攒够一句话就送去 Whisper。</summary>
-        private void ProcessSamples(float[] data, int count)
+        /// <summary>简易能量 VAD：攒够一句话就送去 Whisper（只在模型就绪时调用）。</summary>
+        private void ProcessSamples(float[] data, int count, float rms)
         {
             if (count <= 0) return;
 
-            float sum = 0f;
-            for (int i = 0; i < count; i++) sum += data[i] * data[i];
-            float rms = Mathf.Sqrt(sum / count);
             float chunkSeconds = (float)count / _clipFrequency;
             bool voiced = rms >= speechRmsThreshold;
 
@@ -418,8 +468,6 @@ namespace PrototypeC
 
         private void StartListening()
         {
-            if (_wrapper == null) return;
-
             StopListening();
 
             _device = string.IsNullOrWhiteSpace(microphoneDevice) ? null : microphoneDevice.Trim();
@@ -442,15 +490,15 @@ namespace PrototypeC
             _utterance.Clear();
             _speaking = false;
             _silenceTime = 0f;
-            _ready = true;
+            _micReady = true;
 
-            Debug.Log($"[Whisper] 开始监听：设备={CurrentDeviceLabel()}，采样率={_clipFrequency}Hz，" +
-                      $"音量阈值={speechRmsThreshold:F3}，静音断句={silenceSeconds:F1}s");
+            Debug.Log($"[Whisper] 麦克风已启动：设备={CurrentDeviceLabel()}，采样率={_clipFrequency}Hz" +
+                      "（电平随时可用；模型就绪后才做语音识别）");
         }
 
         private void StopListening()
         {
-            _ready = false;
+            _micReady = false;
             if (_clip != null)
             {
                 if (Microphone.IsRecording(_device)) Microphone.End(_device);

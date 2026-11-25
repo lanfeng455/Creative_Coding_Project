@@ -124,6 +124,9 @@ public class B2BackgroundRain : MonoBehaviour
             ? Mathf.MoveTowards(_density, _densityTarget, dt / ramp)
             : _densityTarget;
 
+        // 完全暂停：连字符的运动/闪烁一起冻住（之前只把 alpha 降到 0，字符还在背后跑）
+        if (_density <= 0.001f && _densityTarget <= 0.001f) return;
+
         float trainLen = (trailLength - 1) * trailSpacing;
         foreach (var c in _cols)
         {
