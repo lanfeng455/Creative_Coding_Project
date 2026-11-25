@@ -23,6 +23,9 @@ namespace PrototypeC
         public string behavior;
         public string placement;
         public string size;
+
+        /// <summary>可选：能力 ID（逗号分隔字符串，与 LLM Schema 的 capabilities 同格式）；空 = 无能力。</summary>
+        public string capabilities = string.Empty;
     }
 
     [Serializable]
@@ -152,6 +155,9 @@ namespace PrototypeC
                 behavior = definition.behavior.ToString(),
                 placement = definition.placement.ToString(),
                 size = definition.size.ToString(),
+                capabilities = definition.capabilities != null && definition.capabilities.Length > 0
+                    ? string.Join(",", definition.capabilities)
+                    : string.Empty,
             };
 
             bool replaced = false;
@@ -271,14 +277,18 @@ namespace PrototypeC
             }
         }
 
-        /// <summary>把条目拼回扁平 JSON，交给既有的严格校验器复检（枚举 / 组合 / 202 字符等规则一处维护）。</summary>
+        /// <summary>把条目拼回扁平 JSON，交给既有的严格校验器复检（枚举 / 组合 / 202 字符 / 能力 ID 等规则一处维护）。</summary>
         private static string ComposeFlatJson(ObjectDictionaryEntry entry) =>
             "{\"objectName\":\"" + Escape(entry.objectName) + "\"," +
             "\"objectDescription\":\"" + Escape(entry.objectDescription) + "\"," +
             "\"sizeDescription\":\"" + Escape(entry.sizeDescription) + "\"," +
             "\"behavior\":\"" + Escape(entry.behavior) + "\"," +
             "\"placement\":\"" + Escape(entry.placement) + "\"," +
-            "\"size\":\"" + Escape(entry.size) + "\"}";
+            "\"size\":\"" + Escape(entry.size) + "\"" +
+            (string.IsNullOrWhiteSpace(entry.capabilities)
+                ? string.Empty
+                : ",\"capabilities\":\"" + Escape(entry.capabilities) + "\"") +
+            "}";
 
         private static string Escape(string raw)
         {

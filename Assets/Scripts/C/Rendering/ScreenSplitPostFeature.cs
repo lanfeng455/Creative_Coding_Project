@@ -15,7 +15,7 @@ namespace PrototypeC.Rendering
 
         [Header("分屏")]
         [Range(0f, 1f)] public float splitY = 0.58f;
-        [Range(0f, 0.2f)] public float feather = 0.01f;
+        [Range(0f, 0.2f)] public float feather = 0.06f;
 
         [Header("下层（房间）")]
         [Range(-100f, 100f)] public float lowerTemperature = 0f;
@@ -29,17 +29,23 @@ namespace PrototypeC.Rendering
         [Range(0f, 2f)] public float lowerContrast = 1f;
         [Range(0f, 4f)] public float lowerBloom = 1f;
 
-        [Header("上层（天空）")]
-        [Range(-100f, 100f)] public float upperTemperature = 41f;
+        [Header("上层（天空 / 手绘淡彩）")]
+        [Range(-100f, 100f)] public float upperTemperature = 10f;
         [Range(-100f, 100f)] public float upperTint = 0f;
-        public Color upperLift = new Color(0f, 0f, 0f, 1f);
+        public Color upperLift = new Color(0.03f, 0.035f, 0.04f, 1f);
         public Color upperGamma = new Color(1f, 1f, 1f, 1f);
         public Color upperGain = new Color(1f, 1f, 1f, 1f);
-        public Color upperShadowTint = new Color(0.5f, 0.5f, 0.5f, 1f);
-        public Color upperHighlightTint = new Color(0.5f, 0.5f, 0.5f, 1f);
-        [Range(0f, 2f)] public float upperSaturation = 1f;
-        [Range(0f, 2f)] public float upperContrast = 1f;
-        [Range(0f, 4f)] public float upperBloom = 0f;
+        public Color upperShadowTint = new Color(0.56f, 0.47f, 0.40f, 1f);
+        public Color upperHighlightTint = new Color(0.98f, 0.96f, 0.90f, 1f);
+        [Range(0f, 2f)] public float upperSaturation = 0.94f;
+        [Range(0f, 2f)] public float upperContrast = 0.84f;
+        [Range(0f, 4f)] public float upperBloom = 0.35f;
+
+        [Header("上层手绘化")]
+        [Range(0f, 0.3f)] public float upperShadowLift = 0.06f;
+        [Range(0f, 0.3f)] public float upperPaperGrain = 0.05f;
+        [Range(0.1f, 10f)] public float upperPaperScale = 2.5f;
+        [Range(0f, 1f)] public float upperInkStrength = 0.30f;
 
         [Header("辉光（上下共用）")]
         [Range(0f, 4f)] public float bloomThreshold = 0.6f;
@@ -95,6 +101,10 @@ namespace PrototypeC.Rendering
             m.SetFloat("_USaturation", upperSaturation);
             m.SetFloat("_UContrast", upperContrast);
             m.SetFloat("_UBloom", upperBloom);
+            m.SetFloat("_UShadowLift", upperShadowLift);
+            m.SetFloat("_UPaperGrain", upperPaperGrain);
+            m.SetFloat("_UPaperScale", upperPaperScale);
+            m.SetFloat("_UInkStrength", upperInkStrength);
 
             m.SetFloat("_BloomThreshold", bloomThreshold);
             m.SetFloat("_BloomRadius", bloomRadius);

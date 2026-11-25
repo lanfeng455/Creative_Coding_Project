@@ -5167,10 +5167,10 @@ MonoBehaviour:
   happySprite: {fileID: 2093084555, guid: d4663f32b5235d54b8dfe26f1cd1e6ce, type: 3}
   tiredSprite: {fileID: 900951518, guid: d4663f32b5235d54b8dfe26f1cd1e6ce, type: 3}
   backgroundSprite: {fileID: 21300000, guid: e36dc8bcc45a42d4387ed7f4ba75939a, type: 3}
-  anchorMode: 1
-  heightAboveFeet: 1.55
-  topMargin: 0.3
-  headOffset: 0.45
+  standRightPos: {x: 0.61, y: 0.76}
+  standLeftPos: {x: -0.27, y: 0.76}
+  lieLeftPos: {x: 0.51, y: 0.76}
+  lieRightPos: {x: 0.49, y: 0.17}
   worldSize: 0.55
   backgroundScale: 1.5
   sortingOrder: 120

@@ -27,13 +27,6 @@ namespace PrototypeC
     [DisallowMultipleComponent]
     public class DinoStatusIcon : MonoBehaviour
     {
-        /// <summary>图标锚定方式。</summary>
-        public enum IconAnchor
-        {
-            FeetOffset = 0,
-            SpriteTop = 1,
-        }
-
         [Header("手绘 Sprite（留空 = 内置占位图）")]
         public Sprite thinkingSprite;
         public Sprite noticeSprite;
@@ -46,14 +39,14 @@ namespace PrototypeC
         public Sprite backgroundSprite;
 
         [Header("位置与尺寸")]
-        [Tooltip("图标锚定方式：FeetOffset=脚底上方固定高度；SpriteTop=跟随恐龙精灵顶部（转身/躺下自动跟随）")]
-        public IconAnchor anchorMode = IconAnchor.SpriteTop;
-        [Tooltip("FeetOffset 模式：图标中心相对恐龙脚底的世界高度（米）")]
-        public float heightAboveFeet = 1.55f;
-        [Tooltip("SpriteTop 模式：图标中心高于精灵包围盒顶部的距离（米）")]
-        public float topMargin = 0.3f;
-        [Tooltip("SpriteTop 模式：图标朝恐龙面朝方向偏移（米）。恐龙朝右时正数=图标在右，0=正上方")]
-        public float headOffset = 0.45f;
+        [Tooltip("站着朝右：图标相对恐龙根节点的 localPosition")]
+        public Vector2 standRightPos = new Vector2(0.61f, 0.76f);
+        [Tooltip("站着朝左：图标 localPosition")]
+        public Vector2 standLeftPos = new Vector2(-0.27f, 0.76f);
+        [Tooltip("躺下朝左：图标 localPosition（按实测值）")]
+        public Vector2 lieLeftPos = new Vector2(0.51f, 0.76f);
+        [Tooltip("躺下朝右：图标 localPosition（实测值）")]
+        public Vector2 lieRightPos = new Vector2(0.49f, 0.17f);
         [Tooltip("内容图标的边长（世界米，按最长边等比）")]
         public float worldSize = 0.55f;
         [Tooltip("底图相对内容图标的放大倍数；必须 ≥1，否则气泡会比内容小导致内容溢出")]
@@ -72,7 +65,8 @@ namespace PrototypeC
         private Transform _anim;      // 动画节点：补间只改它的缩放
         private SpriteRenderer _background;
         private SpriteRenderer _content;
-        private SpriteRenderer _host; // 恐龙本体渲染器：用于 SpriteTop 锚定
+        private SpriteRenderer _host; // 恐龙本体渲染器：用于判断朝向
+        private DinoCController _ctl; // 用于判断是否躺下
 
         private DinoIconType _current = DinoIconType.None;
         private DinoIconType _persistent = DinoIconType.None;
@@ -97,8 +91,32 @@ namespace PrototypeC
 
         private void Awake()
         {
-            _host = GetComponent<SpriteRenderer>();
+            _host = FindHostRenderer();
             Build();
+        }
+
+        /// <summary>找到恐龙的可见渲染器（同物体优先，否则取子物体里面积最大的那个）。</summary>
+        private SpriteRenderer FindHostRenderer()
+        {
+            var self = GetComponent<SpriteRenderer>();
+            if (self != null && self.sprite != null) return self;
+
+            SpriteRenderer best = null;
+            float bestArea = 0f;
+            foreach (var r in GetComponentsInChildren<SpriteRenderer>(true))
+            {
+                if (r == null || r.sprite == null) continue;
+                if (_root != null && (r.transform == _root || r.transform.IsChildOf(_root))) continue;
+
+                var size = r.sprite.bounds.size;
+                float area = size.x * size.y;
+                if (area > bestArea)
+                {
+                    bestArea = area;
+                    best = r;
+                }
+            }
+            return best;
         }
 
         private void Build()
@@ -312,25 +330,20 @@ namespace PrototypeC
             // ② 抵消躺下时的父级旋转：图标永远正立
             _root.rotation = Quaternion.identity;
 
-            // ③ 位置：跟随恐龙当前姿态
-            //    SpriteTop = 精灵包围盒顶部（躺下时 AABB 变矮、中心偏移，图标自动跟着身体走）
-            //    FeetOffset = 旧的固定高度
-            if (anchorMode == IconAnchor.SpriteTop && _host != null && _host.sprite != null)
-            {
-                // 朝向由恐龙根节点 localScale.x 的正负决定；朝右时图标向右偏（在头这侧），朝左反之
-                float face = Mathf.Sign(transform.lossyScale.x);
-                if (Mathf.Approximately(face, 0f)) face = 1f;
+            // ③ 位置：按「朝向 × 是否躺下」使用实测的 localPosition（朝右走/朝左走/朝左躺/朝右躺）
+            if (_host == null) _host = FindHostRenderer();
+            if (_ctl == null) _ctl = GetComponent<DinoCController>();
 
-                Bounds b = _host.bounds;
-                _root.position = new Vector3(
-                    transform.position.x + face * headOffset,
-                    b.max.y + topMargin,
-                    transform.position.z);
-            }
-            else
-            {
-                _root.position = transform.position + Vector3.up * heightAboveFeet;
-            }
+            bool faceRight = _host != null
+                ? _host.flipX == (transform.lossyScale.x < 0f)
+                : transform.lossyScale.x >= 0f;
+
+            bool lying = _ctl != null && _ctl.IsResting;
+            Vector2 p = lying
+                ? (faceRight ? lieRightPos : lieLeftPos)
+                : (faceRight ? standRightPos : standLeftPos);
+
+            _root.localPosition = new Vector3(p.x, p.y, 0f);
 
             // ④ 短暂图标的到时收起
             if (_persistent == DinoIconType.None && _current != DinoIconType.None

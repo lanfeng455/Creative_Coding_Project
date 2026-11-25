@@ -31,3 +31,17 @@ Logs/AssetImportWorker1.log
 
 # 本地编辑器布局/搜索索引/AI 生成器设置：每人不同，不进版本库
 /UserSettings/
+
+# Vosk 语音模型：体积大（~270MB），不进版本库，组员自行下载放置（见仓库根目录指南）
+Assets/StreamingAssets/vosk-model-en-us-0.22-lgraph/
+Assets/StreamingAssets/vosk-model-small-en-us-0.15/
+
+# Unity 构建生成的 AssetBundle（运行时产物，不进版本库）
+Assets/StreamingAssets/StreamingAssets
+Assets/StreamingAssets/StreamingAssets.meta
+Assets/StreamingAssets/StreamingAssets.manifest
+Assets/StreamingAssets/StreamingAssets.manifest.meta
+Assets/StreamingAssets/unifiedraytracing
+Assets/StreamingAssets/unifiedraytracing.meta
+Assets/StreamingAssets/unifiedraytracing.manifest
+Assets/StreamingAssets/unifiedraytracing.manifest.meta

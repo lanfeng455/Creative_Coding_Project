@@ -15,7 +15,7 @@ MonoBehaviour:
   m_Active: 1
   m_Material: {fileID: 2100000, guid: c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5, type: 2}
   splitY: 0.58
-  feather: 0.01
+  feather: 0.06
   lowerTemperature: 0
   lowerTint: 0
   lowerLift: {r: 0, g: 0, b: 0, a: 1}
@@ -26,16 +26,20 @@ MonoBehaviour:
   lowerSaturation: 1
   lowerContrast: 1
   lowerBloom: 1
-  upperTemperature: 41
+  upperTemperature: 10
   upperTint: 0
-  upperLift: {r: 0, g: 0, b: 0, a: 1}
+  upperLift: {r: 0.03, g: 0.035, b: 0.04, a: 1}
   upperGamma: {r: 1, g: 1, b: 1, a: 1}
   upperGain: {r: 1, g: 1, b: 1, a: 1}
-  upperShadowTint: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  upperHighlightTint: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  upperSaturation: 1
-  upperContrast: 1
-  upperBloom: 0
+  upperShadowTint: {r: 0.56, g: 0.47, b: 0.4, a: 1}
+  upperHighlightTint: {r: 0.98, g: 0.96, b: 0.9, a: 1}
+  upperSaturation: 0.94
+  upperContrast: 0.84
+  upperBloom: 0.35
+  upperShadowLift: 0.06
+  upperPaperGrain: 0.05
+  upperPaperScale: 2.5
+  upperInkStrength: 0.3
   bloomThreshold: 0.6
   bloomRadius: 0.01
 --- !u!114 &11400000

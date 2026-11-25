@@ -25,6 +25,7 @@ namespace PrototypeC
                 behavior = definition.behavior.ToString(),
                 placementKind = definition.placement.ToString(),
                 sizeClass = definition.size.ToString(),
+                capabilities = definition.capabilities != null ? (string[])definition.capabilities.Clone() : new string[0],
                 placement = placement,
                 yawDegrees = yawDegrees,
                 size = expectedSize,

@@ -177,8 +177,11 @@ namespace PrototypeC
         [Tooltip("墙面禁放区（窗户等）的颜色")]
         public Color wallKeepOutColor = new Color(1f, 0.35f, 0.85f);
 
-        [Tooltip("锚点颜色")]
-        public Color anchorColor = new Color(0.95f, 0.85f, 0.35f);
+        [Tooltip("恐龙地面分区颜色：室内段")]
+        public Color dinoRoomColor = new Color(0.95f, 0.75f, 0.30f);
+
+        [Tooltip("恐龙地面分区颜色：室外段")]
+        public Color dinoOutdoorColor = new Color(0.45f, 0.85f, 0.95f);
 
         [Tooltip("半透明填充的透明度（只影响 Scene 视图）")]
         [Range(0.02f, 0.6f)] public float fillAlpha = 0.12f;
@@ -517,9 +520,6 @@ namespace PrototypeC
             float groundTop = service != null
                 ? Mathf.Max(service.groundBandMinY, service.groundBandMaxY)
                 : floorY + 0.6f;
-            float ceilingBottom = service != null
-                ? Mathf.Min(service.ceilingBandMinY, service.ceilingBandMaxY)
-                : floorY + 2.8f;
 
             Color Fill(Color c)
             {
@@ -610,52 +610,37 @@ namespace PrototypeC
                 }
             }
 
-            // 命名锚点：竖线 + 允许左右偏移范围（X 一维）+ 名字与 X 值
-            if (anchors != null)
+            // 恐龙地面分区（世界坐标）：横线 + 两端短柱 + 标签；同一份数据也驱动生成物贴地
+            if (dinoGroundZones != null && dinoGroundZones.Count > 0)
             {
-                foreach (RoomAnchorPoint point in anchors)
+                float zWorld = frame.TransformPoint(new Vector3(0f, 0f, groundDepthZ)).z;
+
+                Gizmos.matrix = Matrix4x4.identity;
+                for (int i = 0; i < dinoGroundZones.Count; i++)
                 {
-                    if (point == null) continue;
+                    DinoGroundZone zone = dinoGroundZones[i];
+                    if (zone == null) continue;
 
-                    float yLo;
-                    float yHi;
-                    float baseY;
-                    switch (point.band)
-                    {
-                        case RoomBand.Wall:
-                            yLo = floorY + 0.6f;
-                            yHi = floorY + 2.2f;
-                            baseY = (yLo + yHi) * 0.5f;
-                            break;
-                        case RoomBand.Rooftop:
-                            yLo = ceilingBottom;
-                            yHi = ceilingBottom + 0.4f;
-                            baseY = yHi;
-                            break;
-                        default:
-                            yLo = floorY;
-                            yHi = groundTop;
-                            baseY = floorY;
-                            break;
-                    }
+                    float lo = Mathf.Min(zone.xMin, zone.xMax);
+                    float hi = Mathf.Max(zone.xMin, zone.xMax);
+                    bool room = !string.IsNullOrEmpty(zone.name) &&
+                                zone.name.IndexOf("room", StringComparison.OrdinalIgnoreCase) >= 0;
+                    Color color = room ? dinoRoomColor : dinoOutdoorColor;
 
-                    float depth = point.band == RoomBand.Wall && walls != null && walls.Count > 0 && walls[0] != null
-                        ? walls[0].planeZ - 0.06f
-                        : GetBandDepth(point.band) + 0.04f;
-
-                    Gizmos.color = anchorColor;
-                    Gizmos.DrawLine(new Vector3(point.x, yLo, depth), new Vector3(point.x, yHi, depth));
-                    Gizmos.DrawWireSphere(new Vector3(point.x, baseY, depth), 0.06f);
-
-                    float offset = Mathf.Max(0f, point.maxOffsetX);
-                    if (offset > 0.001f)
-                        Gizmos.DrawLine(new Vector3(point.x - offset, baseY, depth), new Vector3(point.x + offset, baseY, depth));
+                    Gizmos.color = color;
+                    Vector3 left = new Vector3(lo, zone.groundY, zWorld);
+                    Vector3 right = new Vector3(hi, zone.groundY, zWorld);
+                    Gizmos.DrawLine(left, right);
+                    Gizmos.DrawLine(left, left + Vector3.up * 0.12f);
+                    Gizmos.DrawLine(right, right + Vector3.up * 0.12f);
 
                     Handles.Label(
-                        frame.TransformPoint(new Vector3(point.x, yHi + 0.06f, depth)),
-                        $"{point.id}  x={point.x:0.00}",
-                        Label(anchorColor));
+                        new Vector3((lo + hi) * 0.5f, zone.groundY + 0.18f, zWorld),
+                        $"{zone.name}  y={zone.groundY:0.00}  x {lo:0.00} ~ {hi:0.00}",
+                        Label(color));
                 }
+
+                Gizmos.matrix = frame.localToWorldMatrix;
             }
 
             // 地板参考线：从地面主区间左端拉到右端

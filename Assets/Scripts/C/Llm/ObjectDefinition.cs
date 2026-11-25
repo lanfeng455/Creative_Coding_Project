@@ -1,9 +1,11 @@
-// ObjectDefinition.cs —— Prototype C：LLM 物件定义（6 字段）+ 严格 Schema 校验
-// 校验点：字段集合完全一致、全部为字符串、枚举严格匹配、合法组合、两段描述合计 ≤ 202 字符。
+// ObjectDefinition.cs —— Prototype C：LLM 物件定义（6 必填字段 + 可选 capabilities）+ 严格 Schema 校验
+// 校验点：必填字段集合一致、全部为字符串、枚举严格匹配、合法组合、两段描述合计 ≤ 202 字符；
+//         capabilities 为唯一可选键，ID 未注册时只告警忽略、不让物件失败。
 // 校验不通过一律不构造 ObjectSpec，避免把非法结果喂给 Meshy。
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace PrototypeC
 {
@@ -11,7 +13,7 @@ namespace PrototypeC
     public enum ObjectPlacement { Ground, Wall, Rooftop }
     public enum ObjectSize { Small, Medium, Large, SuperLarge }
 
-    /// <summary>LLM 解析出的标准化物件定义：恰好 6 个字段，不含任何 Unity 管理的字段。</summary>
+    /// <summary>LLM 解析出的标准化物件定义：6 个必填字段 + 1 个可选能力字段（capabilities）。</summary>
     [Serializable]
     public class ObjectDefinition
     {
@@ -22,8 +24,16 @@ namespace PrototypeC
         public ObjectPlacement placement;
         public ObjectSize size;
 
-        public string Describe() =>
-            $"{objectName}｜behavior={behavior}｜placement={placement}｜size={size}";
+        /// <summary>能力 ID（已按 ObjectCapabilityIds 规范化）；无能力时为空数组，不影响生成。</summary>
+        public string[] capabilities = Array.Empty<string>();
+
+        public string Describe()
+        {
+            string cap = capabilities != null && capabilities.Length > 0
+                ? "｜cap=" + string.Join(",", capabilities)
+                : string.Empty;
+            return $"{objectName}｜behavior={behavior}｜placement={placement}｜size={size}{cap}";
+        }
     }
 
     public enum ObjectParseStatus
@@ -74,6 +84,9 @@ namespace PrototypeC
         {
             "objectName", "objectDescription", "sizeDescription", "behavior", "placement", "size",
         };
+
+        /// <summary>可选键：物件能力 ID（逗号分隔字符串）。唯一允许的第七个键，缺省 / 留空都合法。</summary>
+        public const string CapabilitiesKey = "capabilities";
 
         /// <summary>校验任意文本（可带 ```json 包裹或前后废话）。</summary>
         public static ObjectParseResult Validate(string rawText)
@@ -134,7 +147,11 @@ namespace PrototypeC
                 if (Array.IndexOf(RequiredKeys, key) < 0) extra.Add(key);
             }
 
-            if (missing.Count > 0 || extra.Count > 0 || values.Count != RequiredKeys.Length)
+            // capabilities 是唯一允许的可选键：不计入「多余字段」
+            extra.RemoveAll(key => string.Equals(key, CapabilitiesKey, StringComparison.Ordinal));
+
+            if (missing.Count > 0 || extra.Count > 0
+                || values.Count < RequiredKeys.Length || values.Count > RequiredKeys.Length + 1)
             {
                 result.error = "字段集合不符" +
                                (missing.Count > 0 ? "；缺少 " + string.Join(", ", missing) : "") +
@@ -195,9 +212,36 @@ namespace PrototypeC
                 behavior = behavior,
                 placement = placement,
                 size = size,
+                capabilities = ParseCapabilities(values),
             };
 
             return result;
+        }
+
+        /// <summary>
+        /// 解析可选 capabilities 字段：逗号 / 分号 / 顿号 / 空格分隔的 ID 串。
+        /// 未注册的 ID 只告警忽略（不让物件失败）；通过 ObjectCapabilityIds 规范化并去重。
+        /// </summary>
+        private static string[] ParseCapabilities(Dictionary<string, string> values)
+        {
+            if (!values.TryGetValue(CapabilitiesKey, out string raw) || string.IsNullOrWhiteSpace(raw))
+                return Array.Empty<string>();
+
+            var accepted = new List<string>();
+            string[] tokens = raw.Split(new[] { ',', ';', '、', ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string token in tokens)
+            {
+                if (ObjectCapabilityIds.TryNormalize(token, out string id))
+                {
+                    if (!accepted.Contains(id)) accepted.Add(id);
+                }
+                else
+                {
+                    Debug.LogWarning($"[PrototypeC] LLM 能力：忽略未注册的能力 ID「{token}」（不影响物件生成）");
+                }
+            }
+
+            return accepted.Count > 0 ? accepted.ToArray() : Array.Empty<string>();
         }
 
         /// <summary>Touch → 全部；Rest → 仅 Ground；Play → Ground/Wall；Ignore → 全部。判定统一走 BehaviorCells，避免和装配表两套表。</summary>

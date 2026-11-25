@@ -112,11 +112,27 @@ namespace PrototypeC
             return material != null && material.shader != null && material.shader.name == ShaderName;
         }
 
-        /// <summary>把风格档写进材质；前景 = 0，背景 = 1。</summary>
+        /// <summary>把风格档写进材质；前景 = 0，背景 = 1，并同步描边参数。</summary>
         public static void SetLayer(Material material, ToonLayer layer)
         {
             if (material == null || !material.HasProperty("_StyleBlend")) return;
             material.SetFloat("_StyleBlend", layer == ToonLayer.Backdrop ? 1f : 0f);
+            ApplyOutlineStyle(material, layer);
+        }
+
+        /// <summary>
+        /// 描边参数：前景给 1.4 px 深棕描边；背景档宽度写 0（shader 里还会按 _StyleBlend discard，双保险）。
+        /// 只改运行时材质，不写回 .glb、不进缓存指纹。
+        /// </summary>
+        public static void ApplyOutlineStyle(Material material, ToonLayer layer)
+        {
+            if (material == null) return;
+
+            if (material.HasProperty("_OutlineWidth"))
+                material.SetFloat("_OutlineWidth", layer == ToonLayer.Foreground ? 1.4f : 0f);
+
+            if (material.HasProperty("_OutlineColor"))
+                material.SetColor("_OutlineColor", new Color(0.22f, 0.16f, 0.12f, 1f));
         }
 
         /// <summary>AI 生成物的统一挂载父节点名；它之下的一切都算前景层。</summary>

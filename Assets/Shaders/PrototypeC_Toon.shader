@@ -14,12 +14,19 @@ Shader "PrototypeC/Toon"
 
         [Header(Toon)]
         _Bands ("Light Bands", Range(1, 5)) = 3
-        _RampSoftness ("Ramp Softness", Range(0.001, 0.5)) = 0.06
+        _RampSoftness ("Ramp Softness", Range(0.001, 0.5)) = 0.14
         _ShadeTint ("Shade Tint", Color) = (0.62, 0.68, 0.88, 1)
-        _AmbientBoost ("Ambient Boost", Range(0, 1)) = 0.18
-        _Contrast ("Contrast", Range(0.5, 2)) = 1.1
+        _AmbientBoost ("Ambient Boost", Range(0, 1)) = 0.22
+        _Contrast ("Contrast", Range(0.5, 2)) = 1.02
         _Saturation ("Saturation", Range(0, 1.6)) = 1.18
-        _RimStrength ("Rim Light", Range(0, 1)) = 0.22
+        _RimStrength ("Rim Light", Range(0, 1)) = 0.18
+
+        [Header(Outline)]
+        _OutlineColor ("Outline Color", Color) = (0.22, 0.16, 0.12, 1)
+        _OutlineWidth ("Outline Width (px)", Range(0, 6)) = 1.4
+
+        [Header(Capability Light)]
+        _CapLightStrength ("Capability Light Strength", Range(0, 2)) = 1
 
         [Header(Style)]
         _StyleBlend ("Foreground 0 / Backdrop 1", Range(0, 1)) = 0
@@ -69,11 +76,78 @@ Shader "PrototypeC/Toon"
             half _NeutralLighten;
             half _WarmHueMin;
             half _WarmHueMax;
+            half4 _OutlineColor;
+            half _OutlineWidth;
+            half _CapLightStrength;
         CBUFFER_END
+
+        // 能力光场（全局 uniform，由 CapabilityLightField 每帧写入；不随材质批次变化）
+        //   _CapLightPos.xyz = 世界坐标，.w = 范围
+        //   _CapLightColor.rgb = 颜色 × 强度，.a = 强度
+        float4 _CapLightPos[8];
+        float4 _CapLightColor[8];
+        float _CapLightCount;
 
         TEXTURE2D(_BaseMap);
         SAMPLER(sampler_BaseMap);
         ENDHLSL
+
+        // 倒置壳描边：只对前景档（_StyleBlend < 0.5）生效，背景档在片元里直接 discard。
+        // 顶点沿法线在屏幕空间外扩固定像素宽度，所以近大远小不会让描边变粗/消失。
+        Pass
+        {
+            Name "Outline"
+            Tags { "LightMode" = "SRPDefaultUnlit" }
+
+            Cull Front
+            ZWrite On
+            ZTest LEqual
+            Blend SrcAlpha OneMinusSrcAlpha
+
+            HLSLPROGRAM
+            #pragma target 3.0
+            #pragma vertex OutlineVert
+            #pragma fragment OutlineFrag
+            #pragma multi_compile_fragment _ _ALPHATEST_ON
+
+            struct OutlineVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            OutlineVaryings OutlineVert(ToonAttributes input)
+            {
+                OutlineVaryings output;
+
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
+                float4 positionCS = TransformWorldToHClip(positionWS);
+
+                float3 normalCS = mul((float3x3)UNITY_MATRIX_VP, normalWS);
+                float2 dir = normalCS.xy;
+                float len = length(dir);
+                dir = len > 1e-5 ? dir / len : float2(0.0, 0.0);
+                positionCS.xy += dir * (_OutlineWidth * 2.0 / max(_ScreenParams.xy, 1.0)) * positionCS.w;
+
+                output.positionCS = positionCS;
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+
+            half4 OutlineFrag(OutlineVaryings input) : SV_Target
+            {
+                if (_StyleBlend > 0.5) discard;
+
+                #ifdef _ALPHATEST_ON
+                    half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a * _BaseColor.a;
+                    clip(alpha - _Cutoff);
+                #endif
+
+                return _OutlineColor;
+            }
+            ENDHLSL
+        }
 
         Pass
         {
@@ -197,6 +271,26 @@ Shader "PrototypeC/Toon"
                 half3 viewDirWS = normalize(GetWorldSpaceViewDir(input.positionWS));
                 half rim = pow(1.0 - saturate(dot(normalWS, viewDirWS)), 4.0);
                 color += rim * _RimStrength * mainLight.color;
+
+                // 能力光场：最多 8 盏点光，距离平方衰减 + 半朗伯；让台灯等 emit_light 物件真正照亮周围
+                half3 capLight = half3(0.0, 0.0, 0.0);
+                int capCount = (int)_CapLightCount;
+                [loop]
+                for (int li = 0; li < 8; li++)
+                {
+                    if (li >= capCount) break;
+
+                    float3 toLight = _CapLightPos[li].xyz - input.positionWS;
+                    float distSq = dot(toLight, toLight);
+                    float lightRange = max(_CapLightPos[li].w, 0.001);
+                    half atten = saturate(1.0 - sqrt(distSq) / lightRange);
+                    atten *= atten;
+
+                    half3 lightDir = toLight * rsqrt(max(distSq, 1e-6));
+                    half halfLambert = saturate(dot(normalWS, lightDir) * 0.5 + 0.5);
+                    capLight += _CapLightColor[li].rgb * (atten * (0.35 + 0.65 * halfLambert));
+                }
+                color += albedo.rgb * capLight * _CapLightStrength;
 
                 // 前景 / 背景两个风格档
                 half contrast = lerp(_Contrast, _BackdropContrast, _StyleBlend);

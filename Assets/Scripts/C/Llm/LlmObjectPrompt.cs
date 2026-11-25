@@ -17,6 +17,9 @@ namespace PrototypeC
         /// <summary>没有 RoomLayout 时的兜底房间尺寸（米）。</summary>
         public static readonly Vector3 FallbackRoomSize = new Vector3(9.6f, 5f, 4f);
 
+        /// <summary>能力目录占位符：真实清单由 ObjectCapabilityIds.DescribeCatalog() 提供，单一事实来源。</summary>
+        public const string CapabilityCatalogPlaceholder = "{CAPABILITY_CATALOG}";
+
         public const string SystemPromptTemplate =
 @"You are an object parser for a 3D asset pipeline in a game prototype. The setting is a small dinosaur's cozy, unfinished apartment.
 
@@ -35,14 +38,22 @@ Return ONLY one JSON object. No markdown, no code fences, no explanation.
 
 If the input maps to a valid object, return exactly these six keys and nothing else:
 {""objectName"":""..."",""objectDescription"":""..."",""sizeDescription"":""..."",""behavior"":""Touch|Rest|Play|Ignore"",""placement"":""Ground|Wall|Rooftop"",""size"":""Small|Medium|Large|SuperLarge""}
+You may optionally add ONE extra key ""capabilities"" (see CAPABILITY RULES below). No other extra keys.
 
 FIELD RULES
 - objectName: short lowercase canonical English noun or compound noun, singular, no articles, no adjectives. Must be identical for semantically identical inputs.
 - objectDescription: English, describes appearance and structure of the object. 60-120 characters.
 - sizeDescription: English, describes real-world size in words, e.g. ""about 1.2 m wide, 0.6 m deep, 0.8 m tall"". 30-70 characters.
 - objectDescription and sizeDescription together MUST be at most 202 characters. Never exceed this.
-- All six keys are required. No extra keys. No nested values. All six values are strings.
+- All six keys are required. No nested values. All values are strings.
 - Enum values must match exactly, including capitalization.
+
+CAPABILITY RULES
+- capabilities (optional): a single string of comma-separated capability IDs, chosen ONLY from this registered catalog: {CAPABILITY_CATALOG}.
+- OUTPUT capabilities make this object affect others; INPUT capabilities make this object react to others. An object may have several at once.
+- Pick only IDs that physically make sense for the object (e.g. a fan emits airflow; a floor lamp emits light; a wind chime receives force and emits sound; a plant responds to airflow and light; a radio emits sound).
+- Never invent IDs, component names, script names or code. Unknown IDs are ignored.
+- Omit the key entirely (or leave it empty) for objects with no special capabilities.
 
 ALLOWED BEHAVIOR / PLACEMENT COMBINATIONS
 - Touch: Ground, Wall, Rooftop
@@ -56,7 +67,10 @@ The room is about {ROOM_WIDTH} m long and {ROOM_HEIGHT} m high. The size class s
 - Medium: about 0.90 m. Single-seat furniture and mid-size props: chair, stool, side table, small crate, floor lamp, potted plant.
 - Large: about 1.60 m. Multi-person furniture and tall storage: sofa, dining table, bed, bookshelf, cabinet.
 - SuperLarge: about 2.40 m. Room-scale pieces: double bed, large wardrobe, tall shelf unit, room divider.
-Furniture is NEVER Small. A chair, table, sofa, bed or shelf must be Medium or larger. If two classes both seem plausible, choose the larger one.
+Furniture is NEVER Small. A chair, table, sofa, bed or shelf must be Medium or larger.
+Floor-standing appliances with a base or pole (fan, floor lamp, heater, coat rack) are NEVER Small; pole-mounted standing fans and tall heaters are Large.
+Hanging ornaments (wind chime, mobile, hanging lamp, hanging plant) are NEVER Small; their longest dimension is about 0.8-1.0 m.
+If two classes both seem plausible, choose the larger one.
 sizeDescription must agree with the chosen class (its longest dimension should be close to that class value).
 
 If the input cannot become a suitable concrete object (abstract concept, animal, or nonsense), do NOT invent an object. Return exactly:
@@ -109,7 +123,10 @@ In that rejection form only, ""unrecognized"" is the JSON boolean true (not a st
                   .Append(",\"sizeDescription\":\"").Append(e.sizeDescription).Append('"')
                   .Append(",\"behavior\":\"").Append(e.behavior).Append('"')
                   .Append(",\"placement\":\"").Append(e.placement).Append('"')
-                  .Append(",\"size\":\"").Append(e.size).Append("\"}\n");
+                  .Append(",\"size\":\"").Append(e.size).Append('"');
+                if (e.capabilities != null && e.capabilities.Length > 0)
+                    sb.Append(",\"capabilities\":\"").Append(string.Join(",", e.capabilities)).Append('"');
+                sb.Append("}\n");
             }
             return sb.ToString().TrimEnd();
         }
@@ -128,7 +145,8 @@ In that rejection form only, ""unrecognized"" is the JSON boolean true (not a st
         {
             return SystemPromptTemplate
                 .Replace(RoomWidthPlaceholder, roomSize.x.ToString("0.##", CultureInfo.InvariantCulture))
-                .Replace(RoomHeightPlaceholder, roomSize.y.ToString("0.##", CultureInfo.InvariantCulture));
+                .Replace(RoomHeightPlaceholder, roomSize.y.ToString("0.##", CultureInfo.InvariantCulture))
+                .Replace(CapabilityCatalogPlaceholder, ObjectCapabilityIds.DescribeCatalog());
         }
     }
 }

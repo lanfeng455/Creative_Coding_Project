@@ -30,13 +30,14 @@ Material:
     m_Ints: []
     m_Floats:
     - _AmbientBoost: 0.18
-    - _BackdropContrast: 0.9
-    - _BackdropDim: 0.3
-    - _BackdropSaturation: 0.65
+    - _BackdropContrast: 0.82
+    - _BackdropDim: 0.35
+    - _BackdropSaturation: 0.55
     - _Bands: 3
     - _Contrast: 1.1
     - _Cutoff: 0.5
-    - _RampSoftness: 0.06
+    - _OutlineWidth: 0
+    - _RampSoftness: 0.14
     - _RimStrength: 0.12
     - _Saturation: 1
     - _StyleBlend: 1

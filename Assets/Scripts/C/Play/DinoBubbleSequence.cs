@@ -153,6 +153,10 @@ namespace PrototypeC
         private Vector3 _waterHome;
         private bool _waterHomeCaptured;
         private bool _rainWasEnabled = true;
+        private B1EventScheduler _scheduler;
+        private bool _schedulerWasEnabled;
+        private readonly List<PhysicsLetter> _frozenLetters = new List<PhysicsLetter>();
+        private readonly List<B1Shard> _frozenShards = new List<B1Shard>();
         private Vector3 _rewardDinoHome;
         private float _dinoHomeX;
         private float _rewardDinoHalfWidth;
@@ -395,6 +399,8 @@ namespace PrototypeC
                 Debug.LogWarning("[Sequence] 找不到 GlyphRain：字符雨不会暂停（检查该物体是否被禁用）");
             }
 
+            PauseLetters();
+
             // 恐龙整段过场交给脚本：先定在原地；期间不会自主躺下/互动/被打断
             if (dino != null && dino.gameObject.activeSelf)
             {
@@ -414,6 +420,49 @@ namespace PrototypeC
         private void PauseAll<T>() where T : Behaviour
         {
             foreach (var b in FindObjectsByType<T>(FindObjectsSortMode.None)) PauseBehaviour(b);
+        }
+
+        /// <summary>
+        /// 暂停真正会掉进场景里的字符雨：B1EventScheduler 停止投字，
+        /// 已在空中的 PhysicsLetter 与 B1Shard 全部停更（它们各自独立，没有总控父物体）。
+        /// </summary>
+        private void PauseLetters()
+        {
+            if (_scheduler == null) _scheduler = FindObjectOfType<B1EventScheduler>();
+            if (_scheduler != null)
+            {
+                _schedulerWasEnabled = _scheduler.enabled;
+                _scheduler.enabled = false;
+            }
+
+            _frozenLetters.Clear();
+            _frozenShards.Clear();
+
+            foreach (var l in FindObjectsByType<PhysicsLetter>(FindObjectsSortMode.None))
+            {
+                if (!l.enabled) continue;
+                l.enabled = false;
+                _frozenLetters.Add(l);
+            }
+
+            foreach (var s in FindObjectsByType<B1Shard>(FindObjectsSortMode.None))
+            {
+                if (!s.enabled) continue;
+                s.enabled = false;
+                _frozenShards.Add(s);
+            }
+
+            Debug.Log($"[Sequence] 字符雨暂停：字母 {_frozenLetters.Count} 个 / 碎屑 {_frozenShards.Count} 个 / 生成器 {(_scheduler != null ? "已停" : "未找到")}");
+        }
+
+        private void ResumeLetters()
+        {
+            foreach (var l in _frozenLetters) if (l != null) l.enabled = true;
+            foreach (var s in _frozenShards) if (s != null) s.enabled = true;
+            _frozenLetters.Clear();
+            _frozenShards.Clear();
+
+            if (_scheduler != null) _scheduler.enabled = _schedulerWasEnabled;
         }
 
         private void PauseBehaviour(Behaviour b)
@@ -1148,6 +1197,7 @@ namespace PrototypeC
 
             // 恢复被暂停的系统
             ResumePausedBehaviours();
+            ResumeLetters();
             if (rain != null)
             {
                 rain.enabled = _rainWasEnabled;

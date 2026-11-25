@@ -40,7 +40,8 @@ Material:
     - _NeutralLighten: 0.42
     - _NeutralMaxSat: 0.366
     - _NeutralStrength: 0.139
-    - _RampSoftness: 0.001
+    - _OutlineWidth: 0
+    - _RampSoftness: 0.14
     - _RimStrength: 0.043
     - _Saturation: 1.19
     - _StyleBlend: 1

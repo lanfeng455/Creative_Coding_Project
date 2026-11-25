@@ -6,7 +6,8 @@
             "sizeDescription": "about 0.8 m wide, 0.8 m deep, 0.9 m tall",
             "behavior": "Rest",
             "placement": "Ground",
-            "size": "Medium"
+            "size": "Medium",
+            "capabilities": ""
         },
         {
             "objectName": "plant",
@@ -14,7 +15,8 @@
             "sizeDescription": "about 0.5 m wide, 0.5 m deep, 0.9 m tall",
             "behavior": "Touch",
             "placement": "Ground",
-            "size": "Medium"
+            "size": "Medium",
+            "capabilities": "respond_to_airflow,respond_to_light"
         },
         {
             "objectName": "bed",
@@ -22,7 +24,8 @@
             "sizeDescription": "about 1.9 m long, 1.0 m wide, 0.6 m tall",
             "behavior": "Rest",
             "placement": "Ground",
-            "size": "Large"
+            "size": "Large",
+            "capabilities": ""
         },
         {
             "objectName": "painting",
@@ -30,7 +33,8 @@
             "sizeDescription": "about 0.7 m wide, 0.05 m deep, 0.5 m tall",
             "behavior": "Ignore",
             "placement": "Wall",
-            "size": "Medium"
+            "size": "Medium",
+            "capabilities": ""
         },
         {
             "objectName": "table",
@@ -38,7 +42,8 @@
             "sizeDescription": "about 1.2 m wide, 0.7 m deep, 0.75 m tall",
             "behavior": "Rest",
             "placement": "Ground",
-            "size": "Large"
+            "size": "Large",
+            "capabilities": ""
         },
         {
             "objectName": "toy",
@@ -46,7 +51,8 @@
             "sizeDescription": "about 0.45 m tall, 0.25 m wide, 0.2 m deep",
             "behavior": "Play",
             "placement": "Ground",
-            "size": "Small"
+            "size": "Small",
+            "capabilities": ""
         },
         {
             "objectName": "flower pot",
@@ -54,7 +60,8 @@
             "sizeDescription": "about 0.4 m wide, 0.4 m deep, 0.5 m tall",
             "behavior": "Rest",
             "placement": "Ground",
-            "size": "Medium"
+            "size": "Medium",
+            "capabilities": ""
         },
         {
             "objectName": "apple",
@@ -62,7 +69,35 @@
             "sizeDescription": "about 8 cm wide, 8 cm deep, 7 cm tall",
             "behavior": "Touch",
             "placement": "Ground",
-            "size": "Small"
+            "size": "Small",
+            "capabilities": ""
+        },
+        {
+            "objectName": "fan",
+            "objectDescription": "An electric standing fan with a round wire guard, three blades and a tilting head on a slim pole base.",
+            "sizeDescription": "about 0.5 m wide, 0.5 m deep, 1.5 m tall",
+            "behavior": "Touch",
+            "placement": "Ground",
+            "size": "Large",
+            "capabilities": "receive_force,emit_airflow"
+        },
+        {
+            "objectName": "lamp",
+            "objectDescription": "A small table lamp with a rounded shade on a short stem, resting on a simple weighted base.",
+            "sizeDescription": "about 0.45 m tall, 0.25 m wide",
+            "behavior": "Touch",
+            "placement": "Ground",
+            "size": "Small",
+            "capabilities": "emit_light"
+        },
+        {
+            "objectName": "wind chime",
+            "objectDescription": "A set of small metal or bamboo tubes hung from a round wooden top, with a central clapper and a hanging string below.",
+            "sizeDescription": "about 0.45 m tall, 0.15 m wide",
+            "behavior": "Ignore",
+            "placement": "Rooftop",
+            "size": "Medium",
+            "capabilities": "emit_sound,respond_to_airflow,receive_force"
         }
     ]
 }

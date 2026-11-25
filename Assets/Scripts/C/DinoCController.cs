@@ -359,7 +359,8 @@ namespace PrototypeC
             }
 
             // 精力耗尽：正在互动就收手，就地休息（不打断已睡着的）
-            if (energy <= 0.001f && _state != CState.Resting)
+            // 必须过休息冷却，否则「躺 9 秒 → 醒来精力仍为 0 → 立刻再躺」会看起来一次躺半分钟
+            if (energy <= 0.001f && _state != CState.Resting && _restCooldown <= 0f)
             {
                 Debug.Log("[DinoC] 精力耗尽，停下来休息");
                 if (_state == CState.Interacting) ExitInteraction("太累了，玩不动了");
@@ -929,6 +930,9 @@ namespace PrototypeC
 
         /// <summary>C 阶段没有逃跑/搬运/建造，所以外部指令永远不被占用。</summary>
         public bool ExternalBusy => _externalLocked;
+
+        /// <summary>当前是否处于躺下休息状态（供状态图标选择锚点）。</summary>
+        public bool IsResting => _state == CState.Resting;
 
         /// <summary>脚本接管整段表演（奖励过场）：期间不做自主决策，不会睡着/躺下、不会互动、不会被新物件打断。</summary>
         public void ExternalLock(bool locked)

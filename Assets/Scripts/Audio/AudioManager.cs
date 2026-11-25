@@ -39,6 +39,9 @@ public enum Sfx
     WoodDeliver,    // 木头打出后落到上层（建材送达）
     WoodPlace,      // 恐龙把一截木头落位（盖房每一步）
     HouseComplete,  // 一间房子封顶完工
+
+    // —— 物件能力库（Prototype C）——
+    ObjectChime,    // 能力物件被敲 / 碰撞（风铃等 emit_sound）
 }
 
 /// <summary>背景音乐槽位。和 Sfx 一样在 Inspector 里拖 clip，代码只引用枚举。

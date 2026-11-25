@@ -122,6 +122,9 @@ namespace PrototypeC
         [Tooltip("LLM 解析出的尺寸档位（Small/Medium/Large/SuperLarge）；本阶段只存储与展示")]
         public string sizeClass = "";
 
+        [Tooltip("LLM 分配的能力 ID（已按 ObjectCapabilityIds 规范化）；由 CapabilityAssembler 在落位后装配，不参与缓存指纹")]
+        public string[] capabilities = new string[0];
+
         [Tooltip("初始放置位置（相对 spawnParent 的局部坐标）；y 视为落地高度")]
         public Vector3 placement = Vector3.zero;
 

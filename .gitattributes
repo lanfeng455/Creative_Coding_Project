@@ -2,3 +2,4 @@
 * text=auto
 Assets/Fonts/NotoSerifCJKsc-Black[[:space:]]SDF.asset filter=lfs diff=lfs merge=lfs -text
 Assets/StreamingAssets/Whisper/*.bin filter=lfs diff=lfs merge=lfs -text
+*.glb filter=lfs diff=lfs merge=lfs -text

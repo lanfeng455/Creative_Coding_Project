@@ -1,4 +1,4 @@
-// ObjectModelService.cs —— Prototype C：生成 / 下载 / 运行时加载 / 本地缓存 的编排层
+﻿// ObjectModelService.cs —— Prototype C：生成 / 下载 / 运行时加载 / 本地缓存 的编排层
 // 对外只暴露两个能力：
 //   GetOrCreateAsync(ObjectSpec) → GameObject（缓存命中优先，未命中才调用 Meshy）
 //   StatusChanged 事件 → 供 UI 显示状态文本
@@ -11,10 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using GLTFast;
 using UnityEngine;
-
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace PrototypeC
 {
@@ -160,6 +156,10 @@ namespace PrototypeC
         [Tooltip("九格合法组合各自指向一个装配预制件；预制件上的 ObjectBehaviorProfile 决定碰撞体/刚体/晃动。留空 = 该格用内置默认")]
         public BehaviorAssemblyTable behaviorAssemblies = BehaviorAssemblyTable.CreateDefault();
 
+        [Header("⑥-B 物件能力分配表（第一版；手动摆放的物件不需要，直接挂能力组件即可）")]
+        [Tooltip("生成物件的能力分配：规范化物件 id → 能力 ID（emit_airflow / respond_to_airflow）。在行为装配之后执行，只挂能力组件，不碰碰撞体/刚体")]
+        public List<CapabilityAssignment> capabilityAssignments = new List<CapabilityAssignment>();
+
         [Header("⑦ 生成、缓存与网络（一般不用改）")]
         [Tooltip("轮询 Meshy 任务的间隔（秒）；服务端返回 Retry-After 时优先使用它")]
         public float pollIntervalSeconds = 5f;
@@ -230,28 +230,6 @@ namespace PrototypeC
         [Tooltip("落地小回弹的速度保留比（0~1）：0 = 直接停住，0.12 左右有一次很小的弹跳")]
         [Range(0f, 0.6f)] public float dropBounce = 0.12f;
 
-        [Header("⑩ 调试与 Scene 视图（仅编辑器，不参与运行时、不进缓存）")]
-        [Tooltip("在 Scene 视图画出地面带 / 墙带 / 天花板带 / 墙面 / 槽位序号；区间配错时用红色提示")]
-        public bool showPlacementGizmos = true;
-
-        [Tooltip("地面带颜色")]
-        public Color groundBandGizmoColor = new Color(0.30f, 0.90f, 0.45f);
-
-        [Tooltip("墙带颜色（同时用于墙面片）")]
-        public Color wallBandGizmoColor = new Color(0.30f, 0.65f, 1f);
-
-        [Tooltip("天花板带颜色")]
-        public Color ceilingBandGizmoColor = new Color(1f, 0.72f, 0.30f);
-
-        [Tooltip("槽位小方块与序号文字颜色")]
-        public Color slotGizmoColor = new Color(0.92f, 0.92f, 0.92f);
-
-        [Tooltip("半透明填充的透明度（只影响 Scene 视图）")]
-        [Range(0.02f, 0.6f)] public float gizmoFillAlpha = 0.15f;
-
-        [Tooltip("冲突提示颜色（区间反转、带重叠时使用）")]
-        public Color gizmoConflictColor = new Color(1f, 0.25f, 0.2f);
-
         public event Action<ModelStatus> StatusChanged;
 
         /// <summary>
@@ -274,6 +252,7 @@ namespace PrototypeC
             new Dictionary<string, MeshGenerationPlaceholder>();
         private int _placedCount;
         private Transform _touchFloor;
+        private bool _touchFloorBuilt;
         private bool _dinoBodyReady;
         private TouchTestPusher _touchTestPusher;
 
@@ -722,6 +701,39 @@ namespace PrototypeC
             return ToWorld(new Vector3(0f, localY, 0f)).y;
         }
 
+        /// <summary>世界 X 处的地面 Y：以 RoomLayout.dinoGroundZones 为唯一真相（世界坐标）；
+        /// 分区外取最近分区的边缘高度；没有分区时退回锚点 groundBandMinY。</summary>
+        private float ResolveWorldGroundY(float worldX)
+        {
+            if (roomLayout == null) roomLayout = FindObjectOfType<RoomLayout>();
+
+            List<DinoGroundZone> zones = roomLayout != null ? roomLayout.dinoGroundZones : null;
+            if (zones != null && zones.Count > 0)
+            {
+                float bestY = ToWorldY(groundBandMinY);
+                float bestDistance = float.MaxValue;
+                foreach (DinoGroundZone zone in zones)
+                {
+                    if (zone == null) continue;
+
+                    float lo = Mathf.Min(zone.xMin, zone.xMax);
+                    float hi = Mathf.Max(zone.xMin, zone.xMax);
+                    if (worldX >= lo && worldX <= hi) return zone.groundY;
+
+                    float distance = worldX < lo ? lo - worldX : worldX - hi;
+                    if (distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        bestY = zone.groundY;
+                    }
+                }
+
+                return bestY;
+            }
+
+            return ToWorldY(groundBandMinY);
+        }
+
         private static Vector3 SlotLocalOffset(int index, int columns, float spacing, float rowSpacing)
         {
             int safeColumns = Mathf.Max(1, columns);
@@ -903,7 +915,7 @@ namespace PrototypeC
                     default:
                         desiredCenter = new Vector3(
                             fitted.center.x,
-                            ToWorldY(groundBandMinY) + fitted.extents.y,
+                            ResolveWorldGroundY(fitted.center.x) + fitted.extents.y,
                             fitted.center.z);
                         break;
                 }
@@ -957,9 +969,14 @@ namespace PrototypeC
             {
                 EnsureDinoBodyCollider();
                 EnsureTouchTestPusher(instance);
+                if (zone == PlacementZone.Ground) EnsureGroundStepGate(instance);
             }
 
             if (assembly.needsSupportFloor) EnsureTouchFloor();
+
+            // 能力装配（第一版）：行为装配完成后、占用登记与恐龙广播之前，按分配表挂能力组件
+            CapabilityAssembler.Assemble(instance, spec, capabilityAssignments);
+
             RegisterOccupancy(instance, spec, zone, yaw, intent, assembly.pushable);
             NotifyItemSettled(spec);
         }
@@ -1312,168 +1329,72 @@ namespace PrototypeC
             _touchTestPusher.SetTarget(instance.transform);
         }
 
-        /// <summary>隐藏的物理地面（无 Renderer），只用来托住 Touch 生成物，避免它们掉到下层或穿地。</summary>
+        /// <summary>
+        /// 隐藏的物理地面（无 Renderer）：按 RoomLayout 的地面分区分段搭建——室内一段高、左右室外各一段低。
+        /// 分段后的台阶侧壁天然实现「物件能从室内被推落到室外、但不能从室外推上台阶进室内」
+        /// （外→内的推动被室内地台的侧面挡住；配合物件上的 GroundStepGate 完成内→外的落下）。
+        /// 没有分区配置时退回旧的单块平面（保持原行为）。
+        /// </summary>
         private void EnsureTouchFloor()
         {
+            if (_touchFloorBuilt) return;
+
             if (_touchFloor == null)
             {
                 var go = new GameObject("PrototypeC_TouchFloor");
-                var box = go.AddComponent<BoxCollider>();
-                box.size = new Vector3(60f, 0.3f, 12f);
                 _touchFloor = go.transform;
             }
 
-            _touchFloor.position = new Vector3(0f, ToWorldY(groundBandMinY) - 0.15f, 0f);
-        }
+            if (roomLayout != null && roomLayout.dinoGroundZones != null && roomLayout.dinoGroundZones.Count > 0)
+            {
+                int built = 0;
+                foreach (DinoGroundZone zone in roomLayout.dinoGroundZones)
+                {
+                    if (zone == null) continue;
 
-#if UNITY_EDITOR
-        // 横向卷轴视角：所有辅助图形都画成「正对相机的竖直面片」，不再画水平薄片
-        private const float GizmoPlaneOffset = 0.12f;
-        private const int GizmoSlotColumns = 6;
+                    float lo = Mathf.Min(zone.xMin, zone.xMax);
+                    float hi = Mathf.Max(zone.xMin, zone.xMax);
+                    if (hi - lo < 0.05f) continue;
+
+                    var box = _touchFloor.gameObject.AddComponent<BoxCollider>();
+                    box.center = new Vector3((lo + hi) * 0.5f, zone.groundY - 0.15f, 0f);
+                    box.size = new Vector3(hi - lo, 0.3f, 12f);
+                    built++;
+                }
+
+                if (built > 0)
+                {
+                    _touchFloorBuilt = true;
+                    Debug.Log($"[PrototypeC] 隐藏地面：按地面分区搭建 {built} 段（室内高、两侧低，台阶侧壁挡住外→内推动）");
+                    return;
+                }
+            }
+
+            // 兜底：没有分区配置时保持旧的单块平面
+            if (_touchFloor.GetComponent<BoxCollider>() == null)
+            {
+                var single = _touchFloor.gameObject.AddComponent<BoxCollider>();
+                single.size = new Vector3(60f, 0.3f, 12f);
+            }
+
+            _touchFloor.position = new Vector3(0f, ToWorldY(groundBandMinY) - 0.15f, 0f);
+            _touchFloorBuilt = true;
+        }
 
         /// <summary>
-        /// 编辑器辅助：把「地面带 / 墙带 / 天花板带 / 墙面 / 旧槽位」画在 Scene 视图里。
-        /// 一律用锚点的 localToWorldMatrix 绘制，所以锚点被旋转/缩放时形状也跟着走；
-        /// 只在编辑器里编译与调用，不进构建、不影响运行时。
+        /// 给「地面可推物件」挂单向台阶闸：能被从室内推落到室外、不能从室外推上台阶进室内。
+        /// 没配置地面分区时不挂（保持旧的纯 X 平推行为）。
         /// </summary>
-        private void OnDrawGizmosSelected()
+        private void EnsureGroundStepGate(GameObject instance)
         {
-            if (!showPlacementGizmos) return;
+            if (instance == null) return;
+            if (roomLayout == null || roomLayout.dinoGroundZones == null || roomLayout.dinoGroundZones.Count == 0) return;
+            if (instance.GetComponent<GroundStepGate>() != null) return;
 
-            Transform anchor = spawnParent != null ? spawnParent : transform;
-            Matrix4x4 previousMatrix = Gizmos.matrix;
-            Gizmos.matrix = anchor.localToWorldMatrix;
-
-            float xMin = Mathf.Min(wallXMin, wallXMax);
-            float xMax = Mathf.Max(wallXMin, wallXMax);
-            float xCenter = (xMin + xMax) * 0.5f;
-            float xSize = Mathf.Max(0.01f, xMax - xMin);
-            float zPlot = wallPlaneZ - GizmoPlaneOffset;
-
-            bool groundInverted = groundBandMinY > groundBandMaxY;
-            bool wallInverted = wallBandMinY > wallBandMaxY;
-            bool ceilingInverted = ceilingBandMinY > ceilingBandMaxY;
-            bool xInverted = wallXMin > wallXMax;
-
-            bool groundWallOverlap = Overlaps(groundBandMinY, groundBandMaxY, wallBandMinY, wallBandMaxY);
-            bool wallCeilingOverlap = Overlaps(wallBandMinY, wallBandMaxY, ceilingBandMinY, ceilingBandMaxY);
-            bool groundCeilingOverlap = Overlaps(groundBandMinY, groundBandMaxY, ceilingBandMinY, ceilingBandMaxY);
-
-            var problems = new List<string>();
-            if (xInverted) problems.Add("wallXMin > wallXMax：挂墙横向范围反了，所有 Wall 物件会被夹到同一侧");
-            if (groundInverted) problems.Add("地面带：起始 Y > 结束 Y（字段填反了）");
-            if (wallInverted) problems.Add("墙带：起始 Y > 结束 Y（字段填反了）");
-            if (ceilingInverted) problems.Add("天花板带：起始 Y > 结束 Y（字段填反了）");
-            if (groundWallOverlap) problems.Add("地面带与墙带重叠：Ground / Wall 的物件会落在同一高度");
-            if (wallCeilingOverlap) problems.Add("墙带与天花板带重叠：挂画可能与 Rooftop 物件撞在一起");
-            if (groundCeilingOverlap) problems.Add("地面带与天花板带重叠");
-
-            Color Fill(Color c, bool conflict)
-            {
-                Color b = conflict ? gizmoConflictColor : c;
-                return new Color(b.r, b.g, b.b, gizmoFillAlpha);
-            }
-
-            GUIStyle Label(Color c)
-            {
-                var style = new GUIStyle(EditorStyles.boldLabel);
-                style.normal.textColor = c;
-                return style;
-            }
-
-            // 竖直面片：在 X-Y 平面上展开，贴在墙面之前，正对相机
-            void Band(string name, float minY, float maxY, Color color, bool conflict)
-            {
-                float lo = Mathf.Min(minY, maxY);
-                float hi = Mathf.Max(minY, maxY);
-                Vector3 center = new Vector3(xCenter, (lo + hi) * 0.5f, zPlot);
-                Vector3 size = new Vector3(xSize, Mathf.Max(0.01f, hi - lo), 0.01f);
-                Color edge = conflict ? gizmoConflictColor : color;
-
-                Gizmos.color = Fill(color, conflict);
-                Gizmos.DrawCube(center, size);
-                Gizmos.color = edge;
-                Gizmos.DrawWireCube(center, size);
-                Handles.Label(
-                    anchor.TransformPoint(new Vector3(xMin, hi + 0.06f, zPlot)),
-                    $"{name}  {lo:0.00} ~ {hi:0.00} m",
-                    Label(edge));
-            }
-
-            // 三条竖直带：横向范围共用 wallXMin/Max，高度各按自己的 Y 区间
-            Band("地面带 Ground", groundBandMinY, groundBandMaxY, groundBandGizmoColor,
-                groundInverted || groundWallOverlap || groundCeilingOverlap);
-            Band("墙带 Wall", wallBandMinY, wallBandMaxY, wallBandGizmoColor,
-                wallInverted || groundWallOverlap || wallCeilingOverlap);
-            Band("天花板带 Rooftop", ceilingBandMinY, ceilingBandMaxY, ceilingBandGizmoColor,
-                ceilingInverted || wallCeilingOverlap || groundCeilingOverlap);
-
-            // 墙面：wallPlaneZ 处的一片竖板，横跨挂墙 X 范围、纵向覆盖墙带
-            float wallLo = Mathf.Min(wallBandMinY, wallBandMaxY);
-            float wallHi = Mathf.Max(wallBandMinY, wallBandMaxY);
-            Vector3 planeCenter = new Vector3(xCenter, (wallLo + wallHi) * 0.5f, wallPlaneZ);
-            Vector3 planeSize = new Vector3(xSize, Mathf.Max(0.01f, wallHi - wallLo), 0.02f);
-            bool planeConflict = xInverted || wallInverted;
-            Gizmos.color = Fill(wallBandGizmoColor, planeConflict);
-            Gizmos.DrawCube(planeCenter, planeSize);
-            Gizmos.color = planeConflict ? gizmoConflictColor : wallBandGizmoColor;
-            Gizmos.DrawWireCube(planeCenter, planeSize);
-            Handles.Label(
-                anchor.TransformPoint(planeCenter + new Vector3(0f, 0f, 0.12f)),
-                $"墙面 wallPlaneZ = {wallPlaneZ:0.00}",
-                Label(planeConflict ? gizmoConflictColor : wallBandGizmoColor));
-
-            // 挂墙朝向箭头（拖动 wallYawDegrees 可直观看到正反）
-            float yaw = overrideWallYaw ? wallYawDegrees : 180f;
-            Vector3 facing = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
-            Vector3 arrowStart = planeCenter;
-            Vector3 arrowEnd = arrowStart + facing * 0.8f;
-            Vector3 arrowSide = Vector3.Cross(Vector3.up, facing).normalized * 0.08f;
-            Gizmos.color = wallBandGizmoColor;
-            Gizmos.DrawLine(arrowStart, arrowEnd);
-            Gizmos.DrawLine(arrowEnd, arrowEnd - facing * 0.15f + arrowSide);
-            Gizmos.DrawLine(arrowEnd, arrowEnd - facing * 0.15f - arrowSide);
-
-            // 旧槽位（仅在关闭求解器时生效）：沿 X 一排竖线 + 序号，顺带标出是否越出挂墙 X 范围
-            int columns = Mathf.Max(1, Mathf.Min(GizmoSlotColumns, slotsPerRow * 2));
-            for (int i = 0; i < columns; i++)
-            {
-                float slotX = xCenter + (i - (columns - 1) * 0.5f) * slotSpacing;
-                bool outside = slotX < xMin || slotX > xMax;
-                Color slotColor = outside ? gizmoConflictColor : slotGizmoColor;
-
-                Gizmos.color = slotColor;
-                Gizmos.DrawLine(
-                    new Vector3(slotX, groundBandMinY, zPlot),
-                    new Vector3(slotX, groundBandMinY + 0.25f, zPlot));
-                Handles.Label(
-                    anchor.TransformPoint(new Vector3(slotX, groundBandMinY + 0.3f, zPlot)),
-                    $"s{i}",
-                    Label(slotColor));
-            }
-
-            if (problems.Count > 0)
-            {
-                float top = Mathf.Max(Mathf.Max(groundBandMinY, groundBandMaxY), Mathf.Max(wallBandMinY, wallBandMaxY));
-                top = Mathf.Max(top, Mathf.Max(ceilingBandMinY, ceilingBandMaxY));
-                Handles.Label(
-                    anchor.TransformPoint(new Vector3(xMin, top + 0.25f, zPlot)),
-                    "配置冲突：\n- " + string.Join("\n- ", problems),
-                    Label(gizmoConflictColor));
-            }
-
-            Gizmos.matrix = previousMatrix;
+            instance.AddComponent<GroundStepGate>().Setup(roomLayout.dinoGroundZones);
+            Debug.Log($"[PrototypeC] 单向台阶闸：{instance.name}（室内→室外可落下，室外→室内被挡）");
         }
 
-        private static bool Overlaps(float aMin, float aMax, float bMin, float bMax)
-        {
-            float aLo = Mathf.Min(aMin, aMax);
-            float aHi = Mathf.Max(aMin, aMax);
-            float bLo = Mathf.Min(bMin, bMax);
-            float bHi = Mathf.Max(bMin, bMax);
-            return aHi > bLo && bHi > aLo;
-        }
-#endif
 
         private static bool TryGetBounds(GameObject root, out Bounds bounds)
         {
