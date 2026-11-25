@@ -5170,6 +5170,7 @@ MonoBehaviour:
   anchorMode: 1
   heightAboveFeet: 1.55
   topMargin: 0.3
+  headOffset: 0.45
   worldSize: 0.55
   backgroundScale: 1.5
   sortingOrder: 120

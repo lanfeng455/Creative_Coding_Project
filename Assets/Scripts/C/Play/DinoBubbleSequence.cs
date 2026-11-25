@@ -388,7 +388,7 @@ namespace PrototypeC
                 // GlyphRain 没有 Suspend API：直接停组件，字符会冻在原地（暂停感明显）
                 _rainWasEnabled = rain.enabled;
                 rain.enabled = false;
-                Debug.Log("[Sequence] 字符雨已暂停");
+                Debug.Log($"[Sequence] 字符雨已暂停（{rain.gameObject.name}）");
             }
             else
             {

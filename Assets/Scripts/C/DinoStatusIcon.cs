@@ -52,6 +52,8 @@ namespace PrototypeC
         public float heightAboveFeet = 1.55f;
         [Tooltip("SpriteTop 模式：图标中心高于精灵包围盒顶部的距离（米）")]
         public float topMargin = 0.3f;
+        [Tooltip("SpriteTop 模式：图标朝恐龙面朝方向偏移（米）。恐龙朝右时正数=图标在右，0=正上方")]
+        public float headOffset = 0.45f;
         [Tooltip("内容图标的边长（世界米，按最长边等比）")]
         public float worldSize = 0.55f;
         [Tooltip("底图相对内容图标的放大倍数；必须 ≥1，否则气泡会比内容小导致内容溢出")]
@@ -315,8 +317,15 @@ namespace PrototypeC
             //    FeetOffset = 旧的固定高度
             if (anchorMode == IconAnchor.SpriteTop && _host != null && _host.sprite != null)
             {
+                // 朝向由恐龙根节点 localScale.x 的正负决定；朝右时图标向右偏（在头这侧），朝左反之
+                float face = Mathf.Sign(transform.lossyScale.x);
+                if (Mathf.Approximately(face, 0f)) face = 1f;
+
                 Bounds b = _host.bounds;
-                _root.position = new Vector3(b.center.x, b.max.y + topMargin, transform.position.z);
+                _root.position = new Vector3(
+                    transform.position.x + face * headOffset,
+                    b.max.y + topMargin,
+                    transform.position.z);
             }
             else
             {
